@@ -1,7 +1,9 @@
+from typing import Union
 from .function import DPIFunction, DPIFunctionCall
 
 
-def get_dpi_definition(func_def, pretty_print=True):
+def get_dpi_definition(func_def: Union[DPIFunction, DPIFunctionCall],
+                       pretty_print=True):
     if isinstance(func_def, DPIFunctionCall):
         func_def = func_def.func_def
     assert isinstance(func_def, DPIFunction), "Only " + DPIFunction.__name__ + " allowed"
@@ -24,3 +26,10 @@ def get_dpi_definition(func_def, pretty_print=True):
     arg_str = padding.join(args)
     result = "{0}{1});".format(result, arg_str)
     return result
+
+
+def get_python_src(func_def: DPIFunction):
+    result = ""
+    # 1. generate the imports
+    imports = func_def.imports
+

@@ -10,7 +10,7 @@ class DPIFunction:
 
     __EXCLUDE_MODULE_NAME = {"__builtins__"}
 
-    def __init__(self, return_type=DataType.Int, **arg_types):
+    def __init__(self, return_type: DataType = DataType.Int, **arg_types):
         self.return_type = return_type
         assert isinstance(self.return_type, DataType), "Return type has to be of " + DataType.__name__
         self.__inspect_frame()
@@ -74,7 +74,7 @@ class DPIFunction:
         fn_body.decorator_list = []
         src = astor.to_source(fn_body)
         return src
-    
+
     @property
     def func_name(self):
         if self.__parent_class is None:
@@ -89,7 +89,7 @@ dpi = DPIFunction
 
 
 class DPIFunctionCall:
-    def __init__(self, func_def):
+    def __init__(self, func_def: DPIFunction):
         assert isinstance(func_def, DPIFunction)
         self.func_def = func_def
         self.args = []
