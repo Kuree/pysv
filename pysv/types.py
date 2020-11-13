@@ -2,12 +2,16 @@ import enum
 
 
 class DataType(enum.Enum):
-    Bit = 1
-    ShortInt = 16
-    Int = 32
-    LongInt = 64
-    UShortInt = 16
-    UInt = 32
-    ULongInt = 64
+    Bit = "bit"
+    Byte = "byte"
+    ShortInt = "shortint"
+    Int = "int"
+    LongInt = "longint"
+    UByte = "byte unsigned"
+    UShortInt = "shortint unsigned"
+    UInt = "int unsigned"
+    ULongInt = "longint unsigned"
+    CHandle = "chandle"
+    String = "string"
     # only for return type
-    Void = 0
+    Void = "void"
