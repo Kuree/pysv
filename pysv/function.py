@@ -16,7 +16,7 @@ class DPIFunction:
         self.__inspect_frame()
 
         self.func = None
-        self.func_name = ""
+        self.__func_name = ""
 
         # check arg types
         for t in arg_types.values():
@@ -26,6 +26,8 @@ class DPIFunction:
             assert isinstance(t, DataType)
             assert t != DataType.Void, str(DataType.Void) + " can only used as return type"
         self.arg_names = []
+
+        self.__parent_class = None
 
     def __inspect_frame(self, num_frame=2):
         # need to found out at this level what are the all imported modules
@@ -56,7 +58,7 @@ class DPIFunction:
                 self.arg_types[name] = DataType.Int
             # arg ordering
             self.arg_names.append(name)
-        self.func_name = fn.__name__
+        self.__func_name = fn.__name__
 
         return DPIFunctionCall(self)
 
@@ -72,6 +74,14 @@ class DPIFunction:
         fn_body.decorator_list = []
         src = astor.to_source(fn_body)
         return src
+    
+    @property
+    def func_name(self):
+        if self.__parent_class is None:
+            return self.__func_name
+        else:
+            cls_name = self.__parent_class.__name__
+            return "{0}_{1}".format(cls_name, self.__func_name)
 
 
 # aliasing
