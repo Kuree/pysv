@@ -3,12 +3,13 @@ import types
 import textwrap
 import ast
 import astor
+from typing import Dict, List
 from .types import DataType
 
 
 class DPIFunction:
 
-    __EXCLUDE_MODULE_NAME = {"__builtins__"}
+    __EXCLUDE_MODULE_NAME = {"__builtins__", "@py_builtins", "@pytest_ar"}
 
     def __init__(self, return_type: DataType = DataType.Int, **arg_types):
         self.return_type = return_type
@@ -25,7 +26,7 @@ class DPIFunction:
         for t in self.arg_types.values():
             assert isinstance(t, DataType)
             assert t != DataType.Void, str(DataType.Void) + " can only used as return type"
-        self.arg_names = []
+        self.arg_names: List[str] = []
 
         self.__parent_class = None
 
@@ -41,7 +42,7 @@ class DPIFunction:
         local_vars = frame.f_locals
         # local can override global variables
         visible_vars.update(local_vars)
-        self.imports = {}
+        self.imports: Dict[str, str] = {}
         for name, val in visible_vars.items():
             if isinstance(val, types.ModuleType) and name not in self.__EXCLUDE_MODULE_NAME:
                 self.imports[name] = val.__name__
