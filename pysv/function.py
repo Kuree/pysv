@@ -1,0 +1,89 @@
+import inspect
+import types
+import textwrap
+import ast
+import astor
+from .types import DataType
+
+
+class DPIFunction:
+
+    __EXCLUDE_MODULE_NAME = {"__builtins__"}
+
+    def __init__(self, return_type=DataType.Int, **arg_types):
+        self.return_type = return_type
+        assert isinstance(self.return_type, DataType), "Return type has to be of " + DataType.__name__
+        self.__inspect_frame()
+
+        self.func = None
+        self.func_name = ""
+
+        # check arg types
+        for t in arg_types.values():
+            assert isinstance(t, DataType)
+        self.arg_types = arg_types
+        for t in self.arg_types.values():
+            assert isinstance(t, DataType)
+            assert t != DataType.Void, str(DataType.Void) + " can only used as return type"
+        self.arg_names = []
+
+    def __inspect_frame(self, num_frame=2):
+        # need to found out at this level what are the all imported modules
+        # need to inspect one frame earlier
+        # although it has some performance issue, it will only be called when a new type of DPI function
+        # is registered
+        frame = inspect.currentframe()
+        for _ in range(num_frame):
+            frame = frame.f_back
+        visible_vars = frame.f_globals.copy()
+        local_vars = frame.f_locals
+        # local can override global variables
+        visible_vars.update(local_vars)
+        self.imports = {}
+        for name, val in visible_vars.items():
+            if isinstance(val, types.ModuleType) and name not in self.__EXCLUDE_MODULE_NAME:
+                self.imports[name] = val.__name__
+
+    def __call__(self, fn):
+        self.func = fn
+        # get it's argument definition, if it is missing, we will assume it is
+        # Int type
+        signature = inspect.signature(fn)
+        params = signature.parameters
+        for name in params:
+            # currently default value not supported
+            if name not in self.arg_types:
+                self.arg_types[name] = DataType.Int
+            # arg ordering
+            self.arg_names.append(name)
+        self.func_name = fn.__name__
+
+        return DPIFunctionCall(self)
+
+    def get_func_src(self):
+        # get the content of the function as str
+        assert self.func is not None
+        fn_src = inspect.getsource(self.func)
+        func_tree = ast.parse(textwrap.dedent(fn_src))
+        fn_body = func_tree.body[0]
+        # only support one decorator
+        assert len(fn_body.decorator_list) == 1, "Only dpi decorator is supported"
+        # remove the decorator
+        fn_body.decorator_list = []
+        src = astor.to_source(fn_body)
+        return src
+
+
+# aliasing
+dpi = DPIFunction
+
+
+class DPIFunctionCall:
+    def __init__(self, func_def):
+        assert isinstance(func_def, DPIFunction)
+        self.func_def = func_def
+        self.args = []
+
+    def __call__(self, *args):
+        self.args = args
+        return self
