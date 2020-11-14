@@ -1,4 +1,4 @@
-from pysv import dpi, DataType
+from pysv import dpi, DataType, is_run_function_set, set_run_function
 
 
 def test_frame_import():
@@ -60,5 +60,19 @@ def test_get_src():
 """
 
 
+def test_run_function():
+    assert not is_run_function_set()
+    set_run_function(True)
+
+    @dpi()
+    def add(a, b):
+        return a + b
+
+    assert add(41, 1) == 42
+    set_run_function(False)
+    r = add(41, 1)
+    assert not isinstance(r, int)
+
+
 if __name__ == "__main__":
-    test_get_src()
+    test_run_function()

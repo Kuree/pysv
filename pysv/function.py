@@ -7,6 +7,17 @@ from typing import Dict, List
 from .types import DataType
 
 
+# by default we will not run the function that's wrapped in
+# to test the python model functionality
+# this needs to be turned on
+def set_run_function(flag: bool):
+    DPIFunctionCall.RUN_FUNCTION = flag
+
+
+def is_run_function_set():
+    return DPIFunctionCall.RUN_FUNCTION
+
+
 class DPIFunction:
 
     __EXCLUDE_MODULE_NAME = {"__builtins__", "@py_builtins", "@pytest_ar"}
@@ -90,6 +101,8 @@ dpi = DPIFunction
 
 
 class DPIFunctionCall:
+    RUN_FUNCTION = False
+
     def __init__(self, func_def: DPIFunction):
         assert isinstance(func_def, DPIFunction)
         self.func_def = func_def
@@ -97,4 +110,7 @@ class DPIFunctionCall:
 
     def __call__(self, *args):
         self.args = args
-        return self
+        if DPIFunctionCall.RUN_FUNCTION:
+            return self.func_def.func(*args)
+        else:
+            return self
