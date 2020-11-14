@@ -36,5 +36,23 @@ def test_str():
         assert outputs[1] == "test " * (4 + 1)
 
 
+def test_numpy():
+    import numpy as np
+
+    @dpi()
+    def min_(a, b):
+        return np.min([a, b])
+
+    with tempfile.TemporaryDirectory() as temp:
+        lib_file = compile_lib([min_], cwd=temp)
+        code = """
+        auto r = min_(-1, -2);
+        std::cout << r << std::endl;
+        """
+
+        outputs = compile_and_run(lib_file, code, temp, [min_])
+        assert int(outputs) == -2
+
+
 if __name__ == "__main__":
-    test_str()
+    test_numpy()

@@ -1,10 +1,23 @@
 from typing import Union, List
 from .function import DPIFunction, DPIFunctionCall
 from .types import DataType
+import os
+import sys
 
 
 __INDENTATION = "  "
 __GLOBAL_STRING_VAR_NAME = "string_result_value"
+__SYS_PATH_NAME = "SYS_PATH"
+__SYS_PATH_FUNC_NAME = "check_sys_path"
+
+
+def __get_code_snippet(name):
+    snippet_dir = os.path.join(os.path.dirname(__file__), "snippets")
+    assert os.path.isdir(snippet_dir)
+    filename = os.path.join(snippet_dir, name)
+    assert os.path.exists(filename)
+    with open(filename) as f:
+        return f.read() + "\n"
 
 
 def get_dpi_definition(func_def: Union[DPIFunction, DPIFunctionCall],
@@ -123,6 +136,10 @@ def get_c_function_signature(func_def: Union[DPIFunction, DPIFunctionCall], pret
     return result
 
 
+def generate_sys_path_check():
+    return __INDENTATION + __SYS_PATH_FUNC_NAME + "();\n"
+
+
 def generate_local_variables(func_def: Union[DPIFunction, DPIFunctionCall]):
     func_def = __get_func_def(func_def)
     result = __INDENTATION + "auto locals = py::dict();\n"
@@ -163,10 +180,13 @@ def generate_return_value(func_def: Union[DPIFunction, DPIFunctionCall]):
     return result
 
 
-def generate_cxx_function(func_def: Union[DPIFunction, DPIFunctionCall], pretty_print: bool = True):
+def generate_cxx_function(func_def: Union[DPIFunction, DPIFunctionCall], pretty_print: bool = True,
+                          add_sys_path: bool = True):
     result = get_c_function_signature(func_def, pretty_print)
     result += " {\n"
     result += generate_local_variables(func_def)
+    if add_sys_path:
+        result += generate_sys_path_check()
     result += generate_execute_code(func_def)
     result += generate_return_value(func_def)
     result += "}\n"
@@ -174,7 +194,21 @@ def generate_cxx_function(func_def: Union[DPIFunction, DPIFunctionCall], pretty_
     return result
 
 
-def generate_bootstrap_code():
+def generate_sys_path_values(pretty_print=True):
+    result = "auto " + __SYS_PATH_NAME + " = {"
+    if pretty_print:
+        padding = ",\n" + len(result) * " "
+    else:
+        padding = ", "
+    path_values = []
+    for p in sys.path:
+        path_values.append('"{0}"'.format(p))
+    result += padding.join(path_values)
+    result += "};\n\n"
+    return result
+
+
+def generate_bootstrap_code(pretty_print=True, add_sys_path=True):
     includes = ['pybind11/include/pybind11/embed.h',
                 'pybind11/include/pybind11/eval.h']
     result = ""
@@ -184,16 +218,21 @@ def generate_bootstrap_code():
     result += "namespace py = pybind11;\n"
     result += "py::scoped_interpreter guard;\n"
     result += "std::string {0};\n".format(__GLOBAL_STRING_VAR_NAME)
+    if add_sys_path:
+        result += generate_sys_path_values(pretty_print)
+        result += __get_code_snippet("sys_path.cc")
+
     return result
 
 
-def generate_cxx_code(func_defs: List[Union[DPIFunction, DPIFunctionCall]], pretty_print=True):
-    result = generate_bootstrap_code() + "\n"
+def generate_cxx_code(func_defs: List[Union[DPIFunction, DPIFunctionCall]], pretty_print: bool = True,
+                      add_sys_path: bool = True):
+    result = generate_bootstrap_code(pretty_print, add_sys_path=add_sys_path) + "\n"
     # generate extern C block
     result += 'extern "C" {\n'
     code_blocks = []
     for func_def in func_defs:
-        code_blocks.append(generate_cxx_function(func_def, pretty_print=pretty_print))
+        code_blocks.append(generate_cxx_function(func_def, pretty_print=pretty_print, add_sys_path=add_sys_path))
     result += "\n".join(code_blocks)
     result += "}\n"
     return result
