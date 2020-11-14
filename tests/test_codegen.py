@@ -1,5 +1,5 @@
 from pysv import get_dpi_definition, dpi, DataType
-from pysv.codegen import get_python_src, generate_c_function
+from pysv.codegen import (get_python_src, generate_cxx_function, generate_c_header, generate_cxx_code)
 # all the module imports in this file should be local to avoid breaking assertions
 
 
@@ -42,11 +42,20 @@ def simple_func(a, b, c):
     return a + b - c
 
 
-def test_generate_c_function(check_file):
-    result = generate_c_function(simple_func)
-    check_file(result, "test_generate_c_function.cc")
+def test_generate_cxx_function(check_file):
+    result = generate_cxx_function(simple_func)
+    check_file(result, "test_generate_cxx_function.cc")
+
+
+def test_generate_c_header():
+    result = generate_c_header(simple_func, pretty_print=False)
+    assert result == "int32_t simple_func(int32_t a, int32_t b, int32_t c);"
+
+
+def test_generate_cxx_code(check_file):
+    result = generate_cxx_code([simple_func])
+    check_file(result, "test_generate_cxx_code.cc")
 
 
 if __name__ == "__main__":
-    from conftest import check_file_fn
-    test_generate_c_function(check_file_fn)
+    test_generate_c_header()

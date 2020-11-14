@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Union, List
 from .function import DPIFunction, DPIFunctionCall
 from .types import DataType
 
@@ -155,15 +155,15 @@ def generate_return_value(func_def: Union[DPIFunction, DPIFunctionCall]):
         return ""
     elif return_type == DataType.String:
         # special care for string
-        result += 'result_value = locals["__result"].cast<std::string>();\n'
-        result += __INDENTATION + "return result_value.c_str();\n"
+        result += '{0} = locals["__result"].cast<std::string>();\n'.format(__GLOBAL_STRING_VAR_NAME)
+        result += __INDENTATION + "return {0}.c_str();\n".format(__GLOBAL_STRING_VAR_NAME)
     else:
         return_type_str = get_c_type_str(return_type)
         result += 'return locals["__result"].cast<{0}>();\n'.format(return_type_str)
     return result
 
 
-def generate_c_function(func_def: Union[DPIFunction, DPIFunctionCall], pretty_print: bool = True):
+def generate_cxx_function(func_def: Union[DPIFunction, DPIFunctionCall], pretty_print: bool = True):
     result = get_c_function_signature(func_def, pretty_print)
     result += " {\n"
     result += generate_local_variables(func_def)
@@ -172,3 +172,33 @@ def generate_c_function(func_def: Union[DPIFunction, DPIFunctionCall], pretty_pr
     result += "}\n"
 
     return result
+
+
+def generate_bootstrap_code():
+    includes = ['pybind11/include/pybind11/embed.h',
+                'pybind11/include/pybind11/eval.h']
+    result = ""
+    for file in includes:
+        result += '#include "{0}"\n'.format(file)
+
+    result += "namespace py = pybind11;\n"
+    result += "py::scoped_interpreter guard;\n"
+    result += "std::string {0};\n".format(__GLOBAL_STRING_VAR_NAME)
+    return result
+
+
+def generate_cxx_code(func_defs: List[Union[DPIFunction, DPIFunctionCall]], pretty_print=True):
+    result = generate_bootstrap_code() + "\n"
+    # generate extern C block
+    result += 'extern "C" {\n'
+    code_blocks = []
+    for func_def in func_defs:
+        code_blocks.append(generate_cxx_function(func_def, pretty_print=pretty_print))
+    result += "\n".join(code_blocks)
+    result += "}\n"
+    return result
+
+
+def generate_c_header(func_def: Union[DPIFunction, DPIFunctionCall], pretty_print: bool = True):
+    return get_c_function_signature(func_def, pretty_print=pretty_print,
+                                    include_attribute=False) + ";"
