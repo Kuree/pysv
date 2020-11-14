@@ -27,9 +27,7 @@ def test_get_python_src():
         return a + b
 
     result = get_python_src(func)
-    expected = """import os as o
-import sys
-def func(a, b):
+    expected = """def func(a, b):
     return a + b
 
 __result = func(__a, __b)

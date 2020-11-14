@@ -60,21 +60,10 @@ def __get_func_def(func_def: Union[DPIFunction, DPIFunctionCall]) -> DPIFunction
 def get_python_src(func_def: Union[DPIFunction, DPIFunctionCall]):
     func_def = __get_func_def(func_def)
     result = ""
-    # 1. generate the imports
-    imports = func_def.imports
-    # maybe there is a performance issue?
-    # some modules may take some time to import.
-    # if that is the case, maybe cache the imports somewhere?
-    for n, m in imports.items():
-        if n == m:
-            result += "import {0}\n".format(n)
-        else:
-            result += "import {0} as {1}\n".format(m, n)
-
-    # 2. output the actual function body
+    # 1. output the actual function body
     result += func_def.get_func_src() + "\n"
 
-    # 3 add result call to set the result into locals
+    # 2 add result call to set the result into locals
     # notice that we prefix __ to each arg using get_arg_name
     args = []
     for n in func_def.arg_names:
@@ -152,12 +141,25 @@ def generate_local_variables(func_def: Union[DPIFunction, DPIFunctionCall]):
     return result
 
 
+def generate_global_variables(func_def: Union[DPIFunction, DPIFunctionCall]):
+    func_def = __get_func_def(func_def)
+    imports = func_def.imports
+    # maybe there is a performance issue?
+    # some modules may take some time to import.
+    # if that is the case, maybe cache the imports somewhere?
+    result = __INDENTATION + "auto globals = py::dict();\n"
+    for n, m in imports.items():
+        result += __INDENTATION + 'globals["{0}"] = py::module::import("{1}");;\n'.format(n, m)
+    result += "\n"
+    return result
+
+
 def generate_execute_code(func_def: Union[DPIFunction, DPIFunctionCall]):
     func_def = __get_func_def(func_def)
     result = __INDENTATION + 'py::exec(R"(\n'
     python_src = get_python_src(func_def)
     result += python_src
-    result += ')", py::globals(), locals);\n'
+    result += ')", globals, locals);\n'
     return result
 
 
@@ -184,6 +186,7 @@ def generate_cxx_function(func_def: Union[DPIFunction, DPIFunctionCall], pretty_
                           add_sys_path: bool = True):
     result = get_c_function_signature(func_def, pretty_print)
     result += " {\n"
+    result += generate_global_variables(func_def)
     result += generate_local_variables(func_def)
     if add_sys_path:
         result += generate_sys_path_check()
