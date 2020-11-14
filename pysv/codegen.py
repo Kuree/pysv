@@ -140,7 +140,7 @@ def generate_execute_code(func_def: Union[DPIFunction, DPIFunctionCall]):
     result = __INDENTATION + 'py::exec(R"(\n'
     python_src = get_python_src(func_def)
     result += python_src
-    result += __INDENTATION + ')", py::globals(), locals);\n'
+    result += ')", py::globals(), locals);\n'
     return result
 
 

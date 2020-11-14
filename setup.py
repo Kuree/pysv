@@ -16,4 +16,8 @@ setup(
     install_requires=[
         "astor",
     ],
+    tests_require=[
+        "numpy",
+        "pytest"
+    ]
 )

@@ -1,5 +1,5 @@
 from pysv import get_dpi_definition, dpi, DataType
-from pysv.codegen import get_python_src
+from pysv.codegen import get_python_src, generate_c_function
 # all the module imports in this file should be local to avoid breaking assertions
 
 
@@ -37,5 +37,16 @@ __result = func(__a, __b)
     assert result == expected
 
 
+@dpi()
+def simple_func(a, b, c):
+    return a + b - c
+
+
+def test_generate_c_function(check_file):
+    result = generate_c_function(simple_func)
+    check_file(result, "test_generate_c_function.cc")
+
+
 if __name__ == "__main__":
-    test_get_python_src()
+    from conftest import check_file_fn
+    test_generate_c_function(check_file_fn)
