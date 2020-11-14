@@ -5,6 +5,7 @@ import ast
 import astor
 from typing import Dict, List
 from .types import DataType
+from .frame import _inspect_frame
 
 
 # by default we will not run the function that's wrapped in
@@ -20,12 +21,10 @@ def is_run_function_set():
 
 class DPIFunction:
 
-    __EXCLUDE_MODULE_NAME = {"__builtins__", "@py_builtins", "@pytest_ar"}
-
     def __init__(self, return_type: DataType = DataType.Int, **arg_types):
         self.return_type = return_type
         assert isinstance(self.return_type, DataType), "Return type has to be of " + DataType.__name__
-        self.__inspect_frame()
+        self.imports = _inspect_frame()
 
         self.func = None
         self.__func_name = ""
@@ -40,23 +39,6 @@ class DPIFunction:
         self.arg_names: List[str] = []
 
         self.__parent_class = None
-
-    def __inspect_frame(self, num_frame=2):
-        # need to found out at this level what are the all imported modules
-        # need to inspect one frame earlier
-        # although it has some performance issue, it will only be called when a new type of DPI function
-        # is registered
-        frame = inspect.currentframe()
-        for _ in range(num_frame):
-            frame = frame.f_back
-        visible_vars = frame.f_globals.copy()
-        local_vars = frame.f_locals
-        # local can override global variables
-        visible_vars.update(local_vars)
-        self.imports: Dict[str, str] = {}
-        for name, val in visible_vars.items():
-            if isinstance(val, types.ModuleType) and name not in self.__EXCLUDE_MODULE_NAME:
-                self.imports[name] = val.__name__
 
     def __call__(self, fn):
         self.func = fn
