@@ -21,8 +21,16 @@ def compile_lib(func_defs, cwd, lib_name="pysv", pretty_print=True):
 
     # codegen the target
     src = generate_cxx_code(func_defs, pretty_print)
-    with open(os.path.join(cwd, "{0}.cc".format(lib_name)), "w+") as f:
-        f.write(src)
+    output_filename = os.path.join(cwd, "{0}.cc".format(lib_name))
+    skip_write_out = False
+    if os.path.exists(output_filename):
+        with open(output_filename) as f:
+            content = f.read()
+            if content == src:
+                skip_write_out = True
+    if not skip_write_out:
+        with open(os.path.join(cwd, "{0}.cc".format(lib_name)), "w+") as f:
+            f.write(src)
 
     # need to run cmake command
     build_dir = os.path.join(cwd, "build")
