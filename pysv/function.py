@@ -38,7 +38,7 @@ class DPIFunction:
             assert t != DataType.Void, str(DataType.Void) + " can only used as return type"
         self.arg_names: List[str] = []
 
-        self.__parent_class = None
+        self.parent_class = None
 
     def __call__(self, fn):
         self.func = fn
@@ -71,10 +71,10 @@ class DPIFunction:
 
     @property
     def func_name(self):
-        if self.__parent_class is None:
+        if self.parent_class is None:
             return self.__func_name
         else:
-            cls_name = self.__parent_class.__name__
+            cls_name = self.parent_class.__name__
             return "{0}_{1}".format(cls_name, self.__func_name)
 
 
