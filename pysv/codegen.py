@@ -20,8 +20,8 @@ def __get_code_snippet(name):
         return f.read() + "\n"
 
 
-def get_dpi_definition(func_def: Union[DPIFunction, DPIFunctionCall],
-                       pretty_print=True):
+def generate_dpi_definition(func_def: Union[DPIFunction, DPIFunctionCall],
+                            pretty_print=True):
     if isinstance(func_def, DPIFunctionCall):
         func_def = func_def.func_def
     assert isinstance(func_def, DPIFunction), "Only " + DPIFunction.__name__ + " allowed"
