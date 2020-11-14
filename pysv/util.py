@@ -8,9 +8,9 @@ def get_cxx_headers(func_defs):
     for func_def in func_defs:
         headers.append(generate_c_header(func_def))
     result = "#include <iostream>\n"
-    result += 'extern "C" {'
+    result += 'extern "C" {\n'
     result += "\n".join(headers)
-    result += "}\n"
+    result += "\n}\n"
     return result
 
 
