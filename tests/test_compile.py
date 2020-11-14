@@ -23,12 +23,17 @@ def test_str():
         code = """
         const char *str = "test ";
         int32_t repeat = 4;
-        auto r = mul_str(repeat, str);
-        std::cout << r;
+        auto r1 = mul_str(repeat, str);
+        std::cout << r1 << std::endl;
+        // another call
+        auto r2 = mul_str(repeat + 1, str);
+        std::cout << r2;
         """
 
-        r = compile_and_run(lib_file, code, temp, [mul_str])
-        assert r == "test " * 4
+        outputs = compile_and_run(lib_file, code, temp, [mul_str])
+        outputs = outputs.splitlines()
+        assert outputs[0] == "test " * 4
+        assert outputs[1] == "test " * (4 + 1)
 
 
 if __name__ == "__main__":
