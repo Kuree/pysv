@@ -1,7 +1,7 @@
 from pysv import compile_lib, dpi, DataType
 import os
 import tempfile
-from pysv.util import compile_and_run
+from pysv.util import compile_and_run, simply_dpi_call_compile
 
 
 def test_compile():
@@ -45,10 +45,11 @@ def test_numpy():
 
     with tempfile.TemporaryDirectory() as temp:
         lib_file = compile_lib([min_], cwd=temp)
+        call_str = simply_dpi_call_compile(min_(-1, -2))
         code = """
-        auto r = min_(-1, -2);
+        auto r = {0};
         std::cout << r << std::endl;
-        """
+        """.format(call_str)
 
         outputs = compile_and_run(lib_file, code, temp, [min_])
         assert int(outputs) == -2

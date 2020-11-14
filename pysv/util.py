@@ -15,6 +15,7 @@ def get_cxx_headers(func_defs):
 
 
 def compile_and_run(lib_path, cxx_content, cwd, func_defs, extra_headers=""):
+    """Used for testing or simple C++ code. Returns captured stdout"""
     headers = get_cxx_headers(func_defs)
     headers += "\n" + extra_headers + "\n"
     # write out the file
@@ -34,3 +35,14 @@ def compile_and_run(lib_path, cxx_content, cwd, func_defs, extra_headers=""):
     output = subprocess.check_output(os.path.join(cwd, "test_cxx"), env=env)
     output = output.decode("utf-8")
     return output
+
+
+def simply_dpi_call_compile(dpi_call):
+    result = dpi_call.func_def.func_name
+    arg_values = []
+    args = dpi_call.args
+    for arg in args:
+        arg_values.append(str(arg))
+    result += "(" + ", ".join(arg_values) + ")"
+
+    return result
