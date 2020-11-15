@@ -61,8 +61,7 @@ def test_get_src():
 
 
 def test_run_function():
-    assert not is_run_function_set()
-    set_run_function(True)
+    assert is_run_function_set()
 
     @dpi()
     def add(a, b):
@@ -72,6 +71,7 @@ def test_run_function():
     set_run_function(False)
     r = add(41, 1)
     assert not isinstance(r, int)
+    set_run_function(True)
 
 
 if __name__ == "__main__":

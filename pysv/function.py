@@ -110,7 +110,9 @@ dpi = DPIFunction
 
 
 class DPIFunctionCall:
-    RUN_FUNCTION = False
+    # all the functions will be run by default
+    # Python-based hardware generator needs to turn this off
+    RUN_FUNCTION = True
 
     def __init__(self, func_def):
         # no type hints for func_def since we need to duck type it

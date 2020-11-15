@@ -1,4 +1,4 @@
-from pysv import compile_lib, dpi, DataType
+from pysv import compile_lib, dpi, DataType, set_run_function
 import os
 import tempfile
 from pysv.util import compile_and_run, simply_dpi_call_compile
@@ -45,7 +45,10 @@ def test_numpy():
 
     with tempfile.TemporaryDirectory() as temp:
         lib_file = compile_lib([min_], cwd=temp)
+        # need to avoid function being run
+        set_run_function(False)
         call_str = simply_dpi_call_compile(min_(-1, -2))
+        set_run_function(True)
         code = """
         auto r = {0};
         std::cout << r << std::endl;
