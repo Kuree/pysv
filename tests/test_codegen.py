@@ -52,7 +52,7 @@ def test_generate_c_header():
 
 
 def test_generate_cxx_code(check_file):
-    result = generate_cxx_code([simple_func], add_sys_path=False)
+    result = generate_cxx_code([simple_func], add_sys_path=False, add_class=False)
     check_file(result, "test_generate_cxx_code.cc")
 
 

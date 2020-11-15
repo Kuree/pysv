@@ -1,12 +1,13 @@
 from typing import Union, List
-from .function import DPIFunction, DPIFunctionCall
+from .function import Function, DPIFunctionCall
 from .types import DataType
+from .model import PySVModel
 import os
 import sys
 
-
 __INDENTATION = "  "
 __GLOBAL_STRING_VAR_NAME = "string_result_value"
+__PY_OBJ_MAP_NAME = "py_obj_map"
 __SYS_PATH_NAME = "SYS_PATH"
 __SYS_PATH_FUNC_NAME = "check_sys_path"
 
@@ -20,11 +21,11 @@ def __get_code_snippet(name):
         return f.read() + "\n"
 
 
-def generate_dpi_definition(func_def: Union[DPIFunction, DPIFunctionCall],
+def generate_dpi_definition(func_def: Union[Function, DPIFunctionCall],
                             pretty_print=True):
     if isinstance(func_def, DPIFunctionCall):
         func_def = func_def.func_def
-    assert isinstance(func_def, DPIFunction), "Only " + DPIFunction.__name__ + " allowed"
+    assert isinstance(func_def, Function), "Only " + Function.__name__ + " allowed"
     # generate args
     # python doesn't have output or ref semantics
     args = []
@@ -50,14 +51,26 @@ def get_arg_name(name):
     return "__" + name
 
 
-def __get_func_def(func_def: Union[DPIFunction, DPIFunctionCall]) -> DPIFunction:
+def __is_class_method(func_def: Union[Function, DPIFunctionCall]):
     if isinstance(func_def, DPIFunctionCall):
         func_def = func_def.func_def
-    assert isinstance(func_def, DPIFunction)
+    return func_def.parent_class is not None
+
+
+def __is_class_constructor(func_def: Union[Function, DPIFunctionCall]):
+    if isinstance(func_def, DPIFunctionCall):
+        func_def = func_def.func_def
+    return isinstance(func_def, PySVModel)
+
+
+def __get_func_def(func_def: Union[Function, DPIFunctionCall]) -> Function:
+    if isinstance(func_def, DPIFunctionCall):
+        func_def = func_def.func_def
+    assert isinstance(func_def, Function)
     return func_def
 
 
-def get_python_src(func_def: Union[DPIFunction, DPIFunctionCall]):
+def get_python_src(func_def: Union[Function, DPIFunctionCall]):
     func_def = __get_func_def(func_def)
     result = ""
     # 1. output the actual function body
@@ -67,9 +80,17 @@ def get_python_src(func_def: Union[DPIFunction, DPIFunctionCall]):
     # notice that we prefix __ to each arg using get_arg_name
     args = []
     for n in func_def.arg_names:
+        if isinstance(func_def, PySVModel) and n == func_def.self_arg_name:
+            # skip self in the python codegen
+            continue
         args.append(get_arg_name(n))
     arg_str = ", ".join(args)
-    result += "__result = {0}({1})\n".format(func_def.func_name, arg_str)
+    if isinstance(func_def, PySVModel):
+        # use the class name to instantiate the object
+        func_name = func_def.__class__.__name__
+    else:
+        func_name = func_def.func_name
+    result += "__result = {0}({1})\n".format(func_name, arg_str)
 
     return result
 
@@ -103,7 +124,7 @@ def get_c_type_str(data_type: DataType):
         raise ValueError(data_type)
 
 
-def get_c_function_signature(func_def: Union[DPIFunction, DPIFunctionCall], pretty_print=True, include_attribute=True):
+def get_c_function_signature(func_def: Union[Function, DPIFunctionCall], pretty_print=True, include_attribute=True):
     func_def = __get_func_def(func_def)
     return_type = get_c_type_str(func_def.return_type)
     if include_attribute:
@@ -129,7 +150,7 @@ def generate_sys_path_check():
     return __INDENTATION + __SYS_PATH_FUNC_NAME + "();\n"
 
 
-def generate_local_variables(func_def: Union[DPIFunction, DPIFunctionCall]):
+def generate_local_variables(func_def: Union[Function, DPIFunctionCall]):
     func_def = __get_func_def(func_def)
     result = __INDENTATION + "auto locals = py::dict();\n"
     # assigning values
@@ -141,7 +162,7 @@ def generate_local_variables(func_def: Union[DPIFunction, DPIFunctionCall]):
     return result
 
 
-def generate_global_variables(func_def: Union[DPIFunction, DPIFunctionCall]):
+def generate_global_variables(func_def: Union[Function, DPIFunctionCall]):
     func_def = __get_func_def(func_def)
     imports = func_def.imports
     # maybe there is a performance issue?
@@ -154,16 +175,35 @@ def generate_global_variables(func_def: Union[DPIFunction, DPIFunctionCall]):
     return result
 
 
-def generate_execute_code(func_def: Union[DPIFunction, DPIFunctionCall]):
+def generate_execute_code(func_def: Union[Function, DPIFunctionCall], pretty_print=True):
     func_def = __get_func_def(func_def)
-    result = __INDENTATION + 'py::exec(R"(\n'
-    python_src = get_python_src(func_def)
-    result += python_src
-    result += ')", globals, locals);\n'
+    # depends on whether it's class method or not
+    if func_def.parent_class is not None:
+        parent: PySVModel = func_def.parent_class
+        # grab values from the locals
+        arg_names = []
+        for arg_name in parent.arg_names:
+            if arg_name == parent.self_arg_name:
+                # no need self
+                continue
+            arg = 'locals["{0}"]'.format(get_arg_name(arg_name))
+            arg_names.append(arg)
+        result = 'locals["__result"] = call_class_func('
+        if pretty_print:
+            padding = ",\n" + len(result) * " "
+        else:
+            padding = ", "
+        args = padding.join(arg_names)
+        result += args + ");\n"
+    else:
+        result = __INDENTATION + 'py::exec(R"(\n'
+        python_src = get_python_src(func_def)
+        result += python_src
+        result += ')", globals, locals);\n'
     return result
 
 
-def generate_return_value(func_def: Union[DPIFunction, DPIFunctionCall]):
+def generate_return_value(func_def: Union[Function, DPIFunctionCall]):
     func_def = __get_func_def(func_def)
     result = __INDENTATION
     # notice that string is different since we need to use a global static
@@ -182,7 +222,7 @@ def generate_return_value(func_def: Union[DPIFunction, DPIFunctionCall]):
     return result
 
 
-def generate_cxx_function(func_def: Union[DPIFunction, DPIFunctionCall], pretty_print: bool = True,
+def generate_cxx_function(func_def: Union[Function, DPIFunctionCall], pretty_print: bool = True,
                           add_sys_path: bool = True):
     result = get_c_function_signature(func_def, pretty_print)
     result += " {\n"
@@ -190,7 +230,7 @@ def generate_cxx_function(func_def: Union[DPIFunction, DPIFunctionCall], pretty_
     result += generate_local_variables(func_def)
     if add_sys_path:
         result += generate_sys_path_check()
-    result += generate_execute_code(func_def)
+    result += generate_execute_code(func_def, pretty_print)
     result += generate_return_value(func_def)
     result += "}\n"
 
@@ -211,26 +251,34 @@ def generate_sys_path_values(pretty_print=True):
     return result
 
 
-def generate_bootstrap_code(pretty_print=True, add_sys_path=True):
-    includes = ['pybind11/include/pybind11/embed.h',
-                'pybind11/include/pybind11/eval.h']
+def generate_bootstrap_code(pretty_print=True, add_sys_path=True, add_class=True):
+    includes = ['"pybind11/include/pybind11/embed.h"',
+                '"pybind11/include/pybind11/eval.h"']
+    if add_class:
+        includes += ['<iostream>',
+                     '<unordered_map>']
     result = ""
     for file in includes:
-        result += '#include "{0}"\n'.format(file)
+        result += '#include {0}\n'.format(file)
 
     result += "namespace py = pybind11;\n"
     result += "py::scoped_interpreter guard;\n"
     result += "std::string {0};\n".format(__GLOBAL_STRING_VAR_NAME)
+    if add_class:
+        result += "std::unordered_map<void*, py::object> {0};\n".format(__PY_OBJ_MAP_NAME)
     if add_sys_path:
         result += generate_sys_path_values(pretty_print)
         result += __get_code_snippet("sys_path.cc")
+    if add_class:
+        result += __get_code_snippet("call_class_func.cc")
+        result += __get_code_snippet("create_class_func.cc")
 
     return result
 
 
-def generate_cxx_code(func_defs: List[Union[DPIFunction, DPIFunctionCall]], pretty_print: bool = True,
-                      add_sys_path: bool = True):
-    result = generate_bootstrap_code(pretty_print, add_sys_path=add_sys_path) + "\n"
+def generate_cxx_code(func_defs: List[Union[Function, DPIFunctionCall]], pretty_print: bool = True,
+                      add_sys_path: bool = True, add_class: bool = True):
+    result = generate_bootstrap_code(pretty_print, add_sys_path=add_sys_path, add_class=add_class) + "\n"
     # generate extern C block
     result += 'extern "C" {\n'
     code_blocks = []
@@ -241,6 +289,6 @@ def generate_cxx_code(func_defs: List[Union[DPIFunction, DPIFunctionCall]], pret
     return result
 
 
-def generate_c_header(func_def: Union[DPIFunction, DPIFunctionCall], pretty_print: bool = True):
+def generate_c_header(func_def: Union[Function, DPIFunctionCall], pretty_print: bool = True):
     return get_c_function_signature(func_def, pretty_print=pretty_print,
                                     include_attribute=False) + ";"

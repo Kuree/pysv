@@ -1,5 +1,5 @@
 import inspect
-import types
+import abc
 import textwrap
 import ast
 import astor
@@ -19,15 +19,32 @@ def is_run_function_set():
     return DPIFunctionCall.RUN_FUNCTION
 
 
-class DPIFunction:
+class Function:
+    def __init__(self):
+        self.imports: Dict[str, str] = {}
+        self.__func_name = ""
+        self.arg_names: List[str] = []
+        self.arg_types: Dict[str, DataType] = {}
+        self.return_type = DataType.Void
+        self.parent_class = None
 
+    @abc.abstractmethod
+    def get_func_src(self):
+        pass
+
+    @property
+    def func_name(self):
+        return ""
+
+
+class DPIFunction(Function):
     def __init__(self, return_type: DataType = DataType.Int, **arg_types):
+        super().__init__()
         self.return_type = return_type
         assert isinstance(self.return_type, DataType), "Return type has to be of " + DataType.__name__
         self.imports = _inspect_frame()
 
         self.func = None
-        self.__func_name = ""
 
         # check arg types
         for t in arg_types.values():
@@ -36,9 +53,6 @@ class DPIFunction:
         for t in self.arg_types.values():
             assert isinstance(t, DataType)
             assert t != DataType.Void, str(DataType.Void) + " can only used as return type"
-        self.arg_names: List[str] = []
-
-        self.parent_class = None
 
     def __call__(self, fn):
         self.func = fn
@@ -57,6 +71,9 @@ class DPIFunction:
         return DPIFunctionCall(self)
 
     def get_func_src(self):
+        if self.parent_class is not None:
+            # class methods are not embedded in the the func src
+            return ""
         # get the content of the function as str
         assert self.func is not None
         fn_src = inspect.getsource(self.func)
@@ -85,8 +102,9 @@ dpi = DPIFunction
 class DPIFunctionCall:
     RUN_FUNCTION = False
 
-    def __init__(self, func_def: DPIFunction):
-        assert isinstance(func_def, DPIFunction)
+    def __init__(self, func_def):
+        # no type hints for func_def since we need to duck type it
+        # due to python importing order we don't want to introduce circular import here
         self.func_def = func_def
         self.args = []
 

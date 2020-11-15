@@ -17,7 +17,7 @@ def test_class_init():
     model = TestModel(42, 1)
     assert len(model.imports) == 1
     assert model.imports["sys"] == "sys"
-    model.func_name = "TestModel__init__"
+    assert model.func_name == "TestModel__init__"
 
 
 def test_get_parent_class():
@@ -30,5 +30,11 @@ def test_get_parent_class():
     assert foo.func_def.func_name == "TestModel_foo"
 
 
+def test_model_src():
+    model = TestModel(42, 1)
+    src = model.get_func_src()
+    assert "@dpi()" not in src
+
+
 if __name__ == "__main__":
-    test_get_parent_class()
+    test_model_src()

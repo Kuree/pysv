@@ -1,7 +1,8 @@
-py::object call_class_func(void *py_ptr, const std::string &func_name) {
+template<class ...Args>
+py::object call_class_func(void *py_ptr, const std::string &func_name, Args &&...args) {
     if (py_obj_map.find(py_ptr) == py_obj_map.end()) {
         std::cerr << "ERROR: unable to call function " << func_name << std::endl;
-        return py::none;
+        return py::none();
     }
     auto handle = py_obj_map.at(py_ptr);
 
@@ -12,10 +13,10 @@ py::object call_class_func(void *py_ptr, const std::string &func_name) {
         handle.dec_ref();
         // 2. use pybind's RAII to remove the actual reference
         py_obj_map.erase(py_ptr);
-        return py::none;
+        return py::none();
     }
 
     auto func = handle.attr(func_name.c_str());
-    auto result = func();
+    auto result = func(args...);
     return result;
 }
