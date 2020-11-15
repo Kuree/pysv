@@ -1,8 +1,10 @@
-import sys
+import sys  # don't remove this import
 from pysv import PySVModel, dpi
 
 
 class TestModel(PySVModel):
+    __test__ = False
+
     def __init__(self, value1, value2):
         super().__init__()
         self.value1 = value1

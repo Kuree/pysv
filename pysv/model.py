@@ -1,11 +1,29 @@
 import inspect
-import gc
 import astor
 import ast
+import types
 import textwrap
 from .function import dpi, DPIFunctionCall, Function
 from .types import DataType
 from .frame import _inspect_frame
+
+
+class __ArgNameVisitor(ast.NodeVisitor):
+    def __init__(self):
+        self.arg_names = []
+
+    def visit_arg(self, node: ast.arg):
+        self.arg_names.append(node.arg)
+        self.generic_visit(node)
+
+
+def get_func_args(src):
+    class_tree = ast.parse(textwrap.dedent(src))
+    assert isinstance(class_tree.body[0], ast.FunctionDef)
+    args = class_tree.body[0].args
+    visitor = __ArgNameVisitor()
+    visitor.visit(args)
+    return visitor.arg_names
 
 
 class PySVModel(Function):
@@ -14,13 +32,14 @@ class PySVModel(Function):
         # need to figure out the args and arg names
         self.imports = _inspect_frame()
         frame = inspect.currentframe().f_back
-        signatures = inspect.signature(gc.get_referrers(frame.f_code)[0])
+        code = inspect.getsource(frame.f_code)
+        signatures = get_func_args(code)
         local_vars = frame.f_locals
         # decide types here
         self.arg_names = []
         self.arg_types = {}
         self.self_arg_name = "self"
-        for idx, arg_name in enumerate(signatures.parameters):
+        for idx, arg_name in enumerate(signatures):
             arg = local_vars[arg_name]
             if idx == 0:
                 assert isinstance(arg, PySVModel)
