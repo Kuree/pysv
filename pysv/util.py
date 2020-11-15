@@ -44,7 +44,7 @@ def compile_and_run(lib_path, cxx_content, cwd, func_defs, extra_headers=""):
     # need to figure out the system CXX compiler
     # this is not portable but good enough
     cxx = __get_cxx_compiler()
-    args = [cxx, filename, lib_path, "-o", os.path.join(cwd, "test_cxx")]
+    args = [cxx, filename, lib_path, "-o", os.path.join(cwd, "test_cxx"), "-std=c++11"]
     print(" ".join(args))
     subprocess.check_call(args)
     env = os.environ.copy()
