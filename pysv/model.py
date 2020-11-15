@@ -121,3 +121,12 @@ class PySVModel(Function):
     def destroy(self):
         # actual implementation provided by the codegen
         pass
+
+    @classmethod
+    def get_dpi_functions(cls):
+        attrs = [getattr(cls, a) for a in dir(cls)]
+        result = []
+        for attr in attrs:
+            if isinstance(attr, DPIFunctionCall):
+                result.append(attr)
+        return result

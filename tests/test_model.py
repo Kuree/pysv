@@ -25,6 +25,18 @@ def test_class_init():
     # notice that the first args is self
     assert model.args[0 + 1] == 42
     assert model.args[1 + 1] == 1
+    # make sure it execute properly
+    assert model.value1 == 42
+
+
+def test_get_dpi_func():
+    dpi_funcs = TestModel.get_dpi_functions()
+    assert len(dpi_funcs) > 1
+    found = False
+    for func in dpi_funcs:
+        if func.func_name == "foo":
+            found = True
+    assert found
 
 
 def test_get_parent_class():
@@ -69,4 +81,4 @@ def test_model_function_call():
 
 
 if __name__ == "__main__":
-    test_model_function_call()
+    test_get_dpi_func()
