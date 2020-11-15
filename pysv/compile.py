@@ -9,7 +9,7 @@ def compile_lib(func_defs, cwd, lib_name="pysv", pretty_print=True, release_buil
     if not os.path.isdir(cwd):
         os.makedirs(cwd, exist_ok=True)
     # need to copy stuff over
-    root_dir = os.path.dirname(os.path.dirname(__file__))
+    root_dir = os.path.dirname(__file__)
     pybind_path = os.path.join(root_dir, "extern", "pybind11")
     assert os.path.isdir(pybind_path)
     # copy that to cwd if it doesn't exist
@@ -17,7 +17,7 @@ def compile_lib(func_defs, cwd, lib_name="pysv", pretty_print=True, release_buil
     if not os.path.isdir(pybind_path_dst):
         shutil.copytree(pybind_path, pybind_path_dst)
     # find the cmake file
-    cmake_file = os.path.join(root_dir, "pysv", "CMakeLists.txt")
+    cmake_file = os.path.join(root_dir, "CMakeLists.txt")
     shutil.copyfile(cmake_file, os.path.join(cwd, "CMakeLists.txt"))
 
     # codegen the target

@@ -11,13 +11,13 @@ setup(
     author='Keyi Zhang',
     author_email='keyi@cs.stanford.edu',
     description=desc,
-    package=['pysv'],
+    packages=['pysv'],
     url="https://github.com/Kuree/pysv",
     install_requires=[
         "astor",
     ],
-    tests_require=[
-        "numpy",
-        "pytest"
-    ]
+    python_requires=">=3.6",
+    extras_require={
+        "test": ["numpy", "pytest"]
+    }
 )

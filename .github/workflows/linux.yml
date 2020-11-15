@@ -29,8 +29,7 @@ jobs:
     - name: Install deps 🛠️
       shell: bash
       run: |
-        pip install -e .
-        pip install numpy pytest
+        pip install -e .[test]
     - name: Run tests ⚙️
       shell: bash
       run: |
