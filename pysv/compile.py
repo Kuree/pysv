@@ -2,9 +2,10 @@ from .codegen import generate_cxx_code
 import subprocess
 import os
 import shutil
+import platform
 
 
-def compile_lib(func_defs, cwd, lib_name="pysv", pretty_print=True):
+def compile_lib(func_defs, cwd, lib_name="pysv", pretty_print=True, release_build=False):
     if not os.path.isdir(cwd):
         os.makedirs(cwd, exist_ok=True)
     # need to copy stuff over
@@ -36,10 +37,18 @@ def compile_lib(func_defs, cwd, lib_name="pysv", pretty_print=True):
     build_dir = os.path.join(cwd, "build")
     if not os.path.isdir(build_dir):
         os.mkdir(build_dir)
-    subprocess.check_call(["cmake", "-DTARGET=" + lib_name, ".."],
+    cmake_args = ["-DTARGET=" + lib_name]
+    if platform.system() != "Windows":
+        if release_build:
+            build_type = "Release"
+        else:
+            build_type = "Debug"
+        cmake_args.append("-DCMAKE_BUILD_TYPE=" + build_type)
+    subprocess.check_call(["cmake"] + cmake_args + [".."],
                           cwd=build_dir)
     # built it!
-    subprocess.check_call(["make"], cwd=build_dir)
+    # use platform default builder
+    subprocess.check_call(["cmake", "--build", "."], cwd=build_dir)
 
     # make sure the actual so file exists
     so_file = os.path.join(build_dir, lib_name + ".so")
