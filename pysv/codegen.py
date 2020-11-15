@@ -138,6 +138,10 @@ def get_c_function_signature(func_def: Union[Function, DPIFunctionCall], pretty_
         padding = ", "
     args = []
     for name in func_def.arg_names:
+        if isinstance(func_def, PySVModel):
+            if name == func_def.self_arg_name:
+                # class constructor don't need the first self
+                continue
         t = func_def.arg_types[name]
         t_str = get_c_type_str(t)
         args.append("{0} {1}".format(t_str, name))
@@ -155,6 +159,10 @@ def generate_local_variables(func_def: Union[Function, DPIFunctionCall]):
     result = __INDENTATION + "auto locals = py::dict();\n"
     # assigning values
     for n in func_def.arg_names:
+        if isinstance(func_def, PySVModel):
+            if n == func_def.self_arg_name:
+                # class constructor don't need the first self
+                continue
         str_name = get_arg_name(n)
         s = __INDENTATION + 'locals["{0}"] = {1};\n'.format(str_name, n)
         result += s
@@ -181,8 +189,8 @@ def generate_execute_code(func_def: Union[Function, DPIFunctionCall], pretty_pri
     if func_def.parent_class is not None:
         parent: PySVModel = func_def.parent_class
         # grab values from the locals
-        arg_names = []
-        for arg_name in parent.arg_names:
+        arg_names = [parent.self_arg_name, '"{0}"'.format(func_def.base_name)]
+        for arg_name in func_def.arg_names:
             if arg_name == parent.self_arg_name:
                 # no need self
                 continue
@@ -216,6 +224,9 @@ def generate_return_value(func_def: Union[Function, DPIFunctionCall]):
         # special care for string
         result += '{0} = locals["__result"].cast<std::string>();\n'.format(__GLOBAL_STRING_VAR_NAME)
         result += __INDENTATION + "return {0}.c_str();\n".format(__GLOBAL_STRING_VAR_NAME)
+    elif return_type == DataType.CHandle:
+        # need to call the cxx function
+        result += __INDENTATION + "return create_class_func(locals);\n"
     else:
         return_type_str = get_c_type_str(return_type)
         result += 'return locals["__result"].cast<{0}>();\n'.format(return_type_str)

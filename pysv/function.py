@@ -33,7 +33,13 @@ class Function:
         pass
 
     @property
+    @abc.abstractmethod
     def func_name(self):
+        return ""
+
+    @property
+    @abc.abstractmethod
+    def base_name(self):
         return ""
 
 
@@ -91,8 +97,12 @@ class DPIFunction(Function):
         if self.parent_class is None:
             return self.__func_name
         else:
-            cls_name = self.parent_class.__name__
+            cls_name = self.parent_class.__class__.__name__
             return "{0}_{1}".format(cls_name, self.__func_name)
+
+    @property
+    def base_name(self):
+        return self.__func_name
 
 
 # aliasing
@@ -114,3 +124,7 @@ class DPIFunctionCall:
             return self.func_def.func(*args)
         else:
             return self
+
+    @property
+    def func_name(self):
+        return self.func_def.func_name

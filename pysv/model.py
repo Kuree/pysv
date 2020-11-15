@@ -38,6 +38,7 @@ class PySVModel(Function):
         # decide types here
         self.arg_names = []
         self.arg_types = {}
+        self.args = []
         self.self_arg_name = "self"
         for idx, arg_name in enumerate(signatures):
             arg = local_vars[arg_name]
@@ -57,15 +58,21 @@ class PySVModel(Function):
                     raise ValueError("Unable to convert {0}({1}) to C types".format(arg_name, arg))
             self.arg_names.append(arg_name)
             self.arg_types[arg_name] = t
+            # notice that "self" is included. code generator need to make sure that
+            # proper pointer is used
+            self.args.append(arg)
+        # returns a pointer to self
+        self.return_type = DataType.CHandle
 
     def __getattribute__(self, name):
         obj = object.__getattribute__(self, name)
         if isinstance(obj, DPIFunctionCall):
             func_def = obj.func_def
             if func_def.parent_class is not None:
-                assert func_def.parent_class == self.__class__
+                assert func_def.parent_class.__class__ == self.__class__
+                func_def.arg_types[func_def.arg_names[0]] = DataType.CHandle
             else:
-                func_def.parent_class = self.__class__
+                func_def.parent_class = self
         return obj
 
     class __HasDPIVisitor(ast.NodeVisitor):
@@ -97,12 +104,18 @@ class PySVModel(Function):
                 ast_block.decorator_list = [node for node in ast_block.decorator_list if not self.__has_dpi_deco(node)]
 
         src = astor.to_source(class_tree)
+        # need to redirect PySVModel into object
+        src = "PySVModel = object\n" + src
         return src
 
     @property
     def func_name(self):
         # hardcode the func name
         return self.__class__.__name__ + "__init__"
+
+    @property
+    def base_name(self):
+        return "__init__"
 
     @dpi(return_type=DataType.Void)
     def destroy(self):
