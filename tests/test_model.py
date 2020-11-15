@@ -19,7 +19,7 @@ class TestModel(PySVModel):
 
 def test_class_init():
     model = TestModel(42, 1)
-    assert len(model.imports) == 1
+    assert len(model.imports) >= 1
     assert model.imports["sys"] == "sys"
     assert model.func_name == "TestModel__init__"
     # notice that the first args is self
@@ -30,10 +30,10 @@ def test_class_init():
 def test_get_parent_class():
     model = TestModel(42, 1)
     foo = model.foo
-    assert foo.func_def.parent_class == TestModel
+    assert foo.func_def.parent_class == model
     # call again
     foo = model.foo
-    assert foo.func_def.parent_class == TestModel
+    assert foo.func_def.parent_class == model
     assert foo.func_def.func_name == "TestModel_foo"
 
 
