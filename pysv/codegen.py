@@ -95,7 +95,7 @@ def get_python_src(func_def: Union[Function, DPIFunctionCall]):
     return result
 
 
-def get_c_type_str(data_type: DataType):
+def get_c_type_str(data_type: DataType):    # pragma: no cover
     if data_type == DataType.Bit:
         return "bool"
     elif data_type == DataType.Bit:

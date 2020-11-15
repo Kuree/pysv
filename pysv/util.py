@@ -1,6 +1,7 @@
 import subprocess
 import os
 from pysv import generate_c_header
+import shutil
 
 
 def get_cxx_headers(func_defs):
@@ -12,6 +13,20 @@ def get_cxx_headers(func_defs):
     result += "\n".join(headers)
     result += "\n}\n"
     return result
+
+
+def __get_cxx_compiler():   # pragma: no cover
+    # TODO: this will not work for windows, since in most of the time
+    #   it requires msvc and a project file. consider change the compilation
+    #   flow into CMake
+    if shutil.which("c++") is not None:
+        return "c++"
+    elif shutil.which("g++") is not None:
+        return "g++"
+    elif shutil.which("clang++") is not None:
+        return "clang++"
+    else:
+        raise ValueError("Unable to find C++ compiler")
 
 
 def compile_and_run(lib_path, cxx_content, cwd, func_defs, extra_headers=""):
@@ -28,7 +43,8 @@ def compile_and_run(lib_path, cxx_content, cwd, func_defs, extra_headers=""):
         f.write("\nreturn 0;\n}")
     # need to figure out the system CXX compiler
     # this is not portable but good enough
-    args = ["g++", filename, lib_path, "-o", os.path.join(cwd, "test_cxx")]
+    cxx = __get_cxx_compiler()
+    args = [cxx, filename, lib_path, "-o", os.path.join(cwd, "test_cxx")]
     print(" ".join(args))
     subprocess.check_call(args)
     env = os.environ.copy()
