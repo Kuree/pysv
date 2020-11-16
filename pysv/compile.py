@@ -51,10 +51,14 @@ def compile_lib(func_defs, cwd, lib_name="pysv", pretty_print=True, release_buil
     subprocess.check_call(["cmake", "--build", "."], cwd=build_dir)
 
     # make sure the actual so file exists
-    so_file = os.path.join(build_dir, lib_name + ".so")
-    if not os.path.isfile(so_file):
-        raise FileNotFoundError("Not able to compile " + so_file)
-    return so_file
+    if platform.system() == "Darwin":
+        shared_lib_ext = ".dylib"
+    else:
+        shared_lib_ext = ".so"
+    lib_file = os.path.join(build_dir, lib_name + shared_lib_ext)
+    if not os.path.isfile(lib_file):
+        raise FileNotFoundError("Not able to compile " + lib_file)
+    return lib_file
 
 
 def __get_cxx_compiler():   # pragma: no cover
@@ -86,7 +90,8 @@ def compile_and_run(lib_path, cxx_content, cwd, func_defs, extra_headers=""):
     # need to figure out the system CXX compiler
     # this is not portable but good enough
     cxx = __get_cxx_compiler()
-    args = [cxx, filename, lib_path, "-o", os.path.join(cwd, "test_cxx")]
+    args = [cxx, filename, lib_path, f"-Wl,-rpath,{os.path.dirname(lib_path)}",
+            "-o", os.path.join(cwd, "test_cxx")]
     print(" ".join(args))
     subprocess.check_call(args)
     env = os.environ.copy()
