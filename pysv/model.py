@@ -46,3 +46,26 @@ self is required to have @sv decorator"""
         func_def.arg_types[func_def.arg_names[0]] = DataType.CHandle
 
         cls.__init__ = call
+
+
+def inject_destructor(cls: type):
+    assert type(cls) == type
+    # use keyword "destroy" as the destructor function name
+
+    def destroy(self):
+        # empty destructor since we're going to replace it with
+        pass
+
+    if hasattr(cls, "destroy"):
+        attr = getattr(cls, "destroy")
+        if not isinstance(attr, DPIFunctionCall):
+            raise SyntaxError('Class exported SystemVerilog cannot have a method'
+                              ' called "destroy" since it is reserved for destructor')
+
+    func_def = DPIFunction(return_type=DataType.Void)
+    func_def.imports = {}
+    func_def.parent_class = cls
+    call = func_def(destroy)
+    func_def.arg_types[func_def.arg_names[0]] = DataType.CHandle
+
+    setattr(cls, "destroy", call)
