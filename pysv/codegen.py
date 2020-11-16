@@ -2,7 +2,7 @@ from typing import Union, List
 from .function import Function, DPIFunctionCall
 from .types import DataType
 from .model import check_class_ctor, get_dpi_functions
-from .util import should_add_class
+from .util import should_add_class, should_add_sys_path
 import os
 import sys
 
@@ -282,9 +282,9 @@ def generate_bootstrap_code(pretty_print=True, add_sys_path=True, add_class=True
     return result
 
 
-def generate_cxx_code(func_defs: List[Union[type, DPIFunctionCall]], pretty_print: bool = True,
-                      add_sys_path: bool = True):
+def generate_cxx_code(func_defs: List[Union[type, DPIFunctionCall]], pretty_print: bool = True):
     add_class = should_add_class(func_defs)
+    add_sys_path = should_add_class(func_defs)
     result = generate_bootstrap_code(pretty_print, add_sys_path=add_sys_path, add_class=add_class) + "\n"
     # generate extern C block
     result += 'extern "C" {\n'
