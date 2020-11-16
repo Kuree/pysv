@@ -1,6 +1,5 @@
 from pysv import generate_dpi_definition, dpi, DataType
-from pysv.codegen import (get_python_src, generate_cxx_function, generate_c_header, generate_cxx_code,
-                          generate_dpi_definition)
+from pysv.codegen import (get_python_src, generate_cxx_function, generate_c_header, generate_cxx_code)
 # all the module imports in this file should be local to avoid breaking assertions
 
 
@@ -20,9 +19,6 @@ def test_get_dpi_definition():
 
 
 def test_get_python_src():
-    import os as o
-    import sys
-
     @dpi()
     def func(a, b):
         return a + b
