@@ -59,10 +59,9 @@ def compile_and_run(lib_path, cxx_content, cwd, func_defs, extra_headers=""):
     return output
 
 
-def simply_dpi_call_compile(dpi_call):
+def simply_dpi_call_compile(dpi_call, *args):
     result = dpi_call.func_def.func_name
     arg_values = []
-    args = dpi_call.args
     for arg in args:
         arg_values.append(str(arg))
     result += "(" + ", ".join(arg_values) + ")"

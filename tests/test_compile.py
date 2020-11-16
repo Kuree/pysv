@@ -45,10 +45,7 @@ def test_numpy():
 
     with tempfile.TemporaryDirectory() as temp:
         lib_file = compile_lib([min_], cwd=temp)
-        # need to avoid function being run
-        set_run_function(False)
-        call_str = simply_dpi_call_compile(min_(-1, -2))
-        set_run_function(True)
+        call_str = simply_dpi_call_compile(min_, -1, -2)
         code = """
         auto r = {0};
         std::cout << r << std::endl;
