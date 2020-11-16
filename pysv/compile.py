@@ -1,4 +1,4 @@
-from .codegen import generate_cxx_code, generate_cxx_headers
+from .codegen import generate_pybind_code, generate_cxx_headers
 import subprocess
 import os
 import shutil
@@ -21,7 +21,7 @@ def compile_lib(func_defs, cwd, lib_name="pysv", pretty_print=True, release_buil
     shutil.copyfile(cmake_file, os.path.join(cwd, "CMakeLists.txt"))
 
     # codegen the target
-    src = generate_cxx_code(func_defs, pretty_print)
+    src = generate_pybind_code(func_defs, pretty_print)
     output_filename = os.path.join(cwd, "{0}.cc".format(lib_name))
     skip_write_out = False
     if os.path.exists(output_filename):

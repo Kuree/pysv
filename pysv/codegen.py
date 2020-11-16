@@ -328,7 +328,7 @@ def generate_bootstrap_code(pretty_print=True, add_sys_path=True, add_class=True
     return result
 
 
-def generate_cxx_code(func_defs: List[Union[type, DPIFunctionCall]], pretty_print: bool = True):
+def generate_pybind_code(func_defs: List[Union[type, DPIFunctionCall]], pretty_print: bool = True):
     add_class = should_add_class(func_defs)
     add_sys_path = should_add_class(func_defs)
     result = generate_bootstrap_code(pretty_print, add_sys_path=add_sys_path, add_class=add_class) + "\n"

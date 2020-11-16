@@ -1,5 +1,5 @@
 from pysv import generate_dpi_signature, sv, DataType
-from pysv.codegen import (get_python_src, generate_cxx_function, generate_c_header, generate_cxx_code,
+from pysv.codegen import (get_python_src, generate_cxx_function, generate_c_header, generate_pybind_code,
                           generate_sv_binding)
 # all the module imports in this file should be local to avoid breaking assertions
 
@@ -49,7 +49,7 @@ def test_generate_c_header():
 
 
 def test_generate_cxx_code(check_file):
-    result = generate_cxx_code([simple_func])
+    result = generate_pybind_code([simple_func])
     check_file(result, "test_generate_cxx_code.cc")
 
 
