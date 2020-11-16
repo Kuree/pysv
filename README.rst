@@ -12,7 +12,7 @@ pysv is designed to be versatile and can be used directly or as a
 library in other hardware generator frameworks. It offers the following
 features:
 
--  C and SystemVerilog header code generation
+-  C/C++ and SystemVerilog binding code generation
 -  Foreign modules, e.g. ``numpy`` or ``tensorflow``.
 -  Python functions
 -  Python classes
@@ -52,11 +52,11 @@ computation.
 .. code:: python
 
    import numpy as np
-   from pysv import sv, compile_lib, DataType
+   from pysv import sv, compile_lib, DataType, generate_sv_binding
 
    class Array:
-       @sv()
        def __init__(self):
+           # constructor without any extra argument is exported to SV directly
            super().__init__()
            self.__array = []
 
@@ -80,5 +80,20 @@ computation.
    # build the lib inside the ./build folder
    # lib_path is the path to the shared library file
    lib_path = compile_lib([Array], cwd="build")
+   # generate SV bindings
+   generate_sv_binding([Array], filename="array_pkg.sv", pkg_name="demo")
+
+Now we can use the class directly with the SystemVerilog binding:
+
+.. code:: SystemVerilog
+
+    // import Array
+    import demo::*;
+
+    Array a = new();
+    a.add_element(1);
+    assert(a.exists(1));
+    assert(!a.exists(2));
+
 
 .. _pybind11: https://github.com/pybind/pybind11
