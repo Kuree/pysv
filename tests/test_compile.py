@@ -19,7 +19,6 @@ def test_str():
         return num * s
 
     with tempfile.TemporaryDirectory() as temp:
-        temp = "temp"
         lib_file = compile_lib([mul_str], cwd=temp)
         code = """
         const char *str = "test ";
