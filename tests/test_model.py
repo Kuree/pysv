@@ -1,5 +1,5 @@
 import sys  # don't remove this import
-from pysv import dpi, compile_lib
+from pysv import sv, compile_lib
 from pysv.compile import compile_and_run
 from pysv.function import DPIFunctionCall
 from pysv.model import get_dpi_functions
@@ -10,12 +10,12 @@ import tempfile
 class TestModel:
     __test__ = False
 
-    @dpi()
+    @sv()
     def __init__(self, value1, value2):
         self.value1 = value1
         self.value2 = value2
 
-    @dpi()
+    @sv()
     def foo(self, value):
         return value + self.value1 - self.value2
 

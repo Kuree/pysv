@@ -9,12 +9,12 @@ class __HasDPIVisitor(ast.NodeVisitor):
         self.result = False
 
     def visit_Name(self, node: ast.Name):
-        if node.id == "dpi":
+        if node.id == "sv":
             self.result = True
         self.generic_visit(node)
 
 
-def __has_dpi_deco(node):
+def has_sv_deco(node):
     visitor = __HasDPIVisitor()
     visitor.visit(node)
     return visitor.result
@@ -31,7 +31,7 @@ def get_class_src(cls: type):
     class_body = class_ast.body
     for ast_block in class_body:
         if isinstance(ast_block, ast.FunctionDef):
-            ast_block.decorator_list = [node for node in ast_block.decorator_list if not __has_dpi_deco(node)]
+            ast_block.decorator_list = [node for node in ast_block.decorator_list if not has_sv_deco(node)]
 
     src = astor.to_source(class_tree)
     return src

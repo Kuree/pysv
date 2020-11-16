@@ -100,7 +100,7 @@ class DPIFunction(Function):
 
 
 # aliasing
-dpi = DPIFunction
+sv = DPIFunction
 
 
 class DPIFunctionCall:

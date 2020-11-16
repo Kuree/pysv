@@ -1,8 +1,5 @@
 import inspect
-import astor
-import ast
-import textwrap
-from .function import dpi, DPIFunctionCall
+from .function import DPIFunctionCall
 from .types import DataType
 
 
@@ -30,4 +27,5 @@ def check_class_ctor(cls: type):
         # it's a normal init ctor
         # make sure that it doesn't have any extra parameters
         signature = inspect.signature(ctor)
-        assert len(signature.parameters) == 1, "Class __init__ needs to have @dpi decorator"
+        assert len(signature.parameters) == 1, """Class constructor has more arguments than simple
+self is required to have @sv decorator"""

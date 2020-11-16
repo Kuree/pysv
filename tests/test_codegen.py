@@ -1,10 +1,10 @@
-from pysv import generate_dpi_definition, dpi, DataType
+from pysv import generate_dpi_definition, sv, DataType
 from pysv.codegen import (get_python_src, generate_cxx_function, generate_c_header, generate_cxx_code)
 # all the module imports in this file should be local to avoid breaking assertions
 
 
 def test_get_dpi_definition():
-    @dpi(a=DataType.String, b=DataType.Byte, return_type=DataType.CHandle)
+    @sv(a=DataType.String, b=DataType.Byte, return_type=DataType.CHandle)
     def func(a, b):
         return a + b
 
@@ -19,7 +19,7 @@ def test_get_dpi_definition():
 
 
 def test_get_python_src():
-    @dpi()
+    @sv()
     def func(a, b):
         return a + b
 
@@ -32,7 +32,7 @@ __result = func(__a, __b)
     assert result == expected
 
 
-@dpi()
+@sv()
 def simple_func(a, b, c):
     return a + b - c
 

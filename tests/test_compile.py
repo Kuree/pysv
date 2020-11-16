@@ -1,11 +1,11 @@
-from pysv import compile_lib, dpi, DataType, set_run_function
+from pysv import compile_lib, sv, DataType, set_run_function
 import os
 import tempfile
 from pysv.compile import compile_and_run, simply_dpi_call_compile
 
 
 def test_compile():
-    @dpi()
+    @sv()
     def add(a, b):
         return a + b
     with tempfile.TemporaryDirectory() as temp:
@@ -14,7 +14,7 @@ def test_compile():
 
 
 def test_str():
-    @dpi(s=DataType.String, return_type=DataType.String)
+    @sv(s=DataType.String, return_type=DataType.String)
     def mul_str(num, s):
         return num * s
 
@@ -39,7 +39,7 @@ def test_str():
 def test_numpy():
     import numpy as np
 
-    @dpi()
+    @sv()
     def min_(a, b):
         return np.min([a, b])
 
