@@ -1,29 +1,26 @@
-from pysv import generate_dpi_definition, dpi, DataType
+from pysv import generate_dpi_signature, sv, DataType
 from pysv.codegen import (get_python_src, generate_cxx_function, generate_c_header, generate_cxx_code,
-                          generate_dpi_definition)
+                          generate_sv_binding)
 # all the module imports in this file should be local to avoid breaking assertions
 
 
 def test_get_dpi_definition():
-    @dpi(a=DataType.String, b=DataType.Byte, return_type=DataType.CHandle)
+    @sv(a=DataType.String, b=DataType.Byte, return_type=DataType.CHandle)
     def func(a, b):
         return a + b
 
-    result = generate_dpi_definition(func)
+    result = generate_dpi_signature(func)
     expected = 'import "DPI-C" function chandle func(input string a,\n' \
                '                                     input byte b);'
     assert result == expected
 
-    result = generate_dpi_definition(func, pretty_print=False)
+    result = generate_dpi_signature(func, pretty_print=False)
     expected = 'import "DPI-C" function chandle func(input string a, input byte b);' # noqa
     assert expected == result
 
 
 def test_get_python_src():
-    import os as o
-    import sys
-
-    @dpi()
+    @sv()
     def func(a, b):
         return a + b
 
@@ -36,7 +33,7 @@ __result = func(__a, __b)
     assert result == expected
 
 
-@dpi()
+@sv()
 def simple_func(a, b, c):
     return a + b - c
 
@@ -52,15 +49,32 @@ def test_generate_c_header():
 
 
 def test_generate_cxx_code(check_file):
-    result = generate_cxx_code([simple_func], add_sys_path=False, add_class=False)
+    result = generate_cxx_code([simple_func])
     check_file(result, "test_generate_cxx_code.cc")
 
 
 def test_generate_dpi_header(check_file):
-    result = generate_dpi_definition(simple_func)
+    result = generate_dpi_signature(simple_func)
     check_file(result, "test_generate_dpi_header.sv")
-    result = generate_dpi_definition(simple_func, pretty_print=False)
+    result = generate_dpi_signature(simple_func, pretty_print=False)
     assert result == 'import "DPI-C" function int simple_func(input int a, input int b, input int c);'
+
+
+def test_generate_sv_binding(check_file):
+    class SomeClass:
+        def __init__(self):
+            self.value = "hello world\n"
+
+        @sv(return_type=DataType.Void)
+        def print_a(self):
+            print(self.value)
+
+        @sv(return_type=DataType.Void)
+        def print_b(self, num):
+            print(self.value * num)
+
+    result = generate_sv_binding([SomeClass])
+    check_file(result, "test_generate_sv_binding.sv")
 
 
 if __name__ == "__main__":

@@ -1,10 +1,10 @@
-from pysv import dpi, DataType, is_run_function_set, set_run_function
+from pysv import sv, DataType, is_run_function_set, set_run_function
 
 
 def test_frame_import():
     import os as os_
 
-    @dpi()
+    @sv()
     def func():
         pass
 
@@ -14,11 +14,11 @@ def test_frame_import():
 
 
 def test_width():
-    @dpi()
+    @sv()
     def func1():
         pass
 
-    @dpi(DataType.Bit)
+    @sv(DataType.Bit)
     def func2():
         pass
 
@@ -28,7 +28,7 @@ def test_width():
 
 
 def test_arg():
-    @dpi(a=DataType.ShortInt)
+    @sv(a=DataType.ShortInt)
     def func1(a, b):
         pass
 
@@ -42,7 +42,7 @@ def test_arg():
 
 
 def test_func_name():
-    @dpi()
+    @sv()
     def func_name():
         pass
 
@@ -50,7 +50,7 @@ def test_func_name():
 
 
 def test_get_src():
-    @dpi()
+    @sv()
     def func(a, b):
         return a + b
     src = func.func_def.get_func_src()
@@ -61,10 +61,9 @@ def test_get_src():
 
 
 def test_run_function():
-    assert not is_run_function_set()
-    set_run_function(True)
+    assert is_run_function_set()
 
-    @dpi()
+    @sv()
     def add(a, b):
         return a + b
 
@@ -72,6 +71,7 @@ def test_run_function():
     set_run_function(False)
     r = add(41, 1)
     assert not isinstance(r, int)
+    set_run_function(True)
 
 
 if __name__ == "__main__":

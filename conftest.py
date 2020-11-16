@@ -5,12 +5,12 @@ import filecmp
 import difflib
 
 
-def get_vector_dir():
-    return os.path.join(os.path.dirname(__file__), "tests", "vectors")
+def get_gold_dir():
+    return os.path.join(os.path.dirname(__file__), "tests", "gold")
 
 
 def check_file_fn(src_str: str, vector_filename: str):
-    vector_filename = os.path.join(get_vector_dir(), vector_filename)
+    vector_filename = os.path.join(get_gold_dir(), vector_filename)
     with tempfile.TemporaryDirectory() as temp:
         temp_filename = os.path.join(temp, "file")
         with open(temp_filename, "w+") as f:

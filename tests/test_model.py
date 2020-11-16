@@ -1,72 +1,90 @@
 import sys  # don't remove this import
-from pysv import PySVModel, dpi, compile_lib
-from pysv.util import compile_and_run
+from pysv import sv, compile_lib
+from pysv.compile import compile_and_run
+from pysv.function import DPIFunctionCall
+from pysv.model import get_dpi_functions, check_class_ctor
+from pysv.pyast import get_class_src
 import tempfile
 
 
-class TestModel(PySVModel):
+class TestModel:
     __test__ = False
 
+    @sv()
     def __init__(self, value1, value2):
-        super().__init__()
         self.value1 = value1
         self.value2 = value2
 
-    @dpi()
+    @sv()
     def foo(self, value):
         return value + self.value1 - self.value2
 
 
+def test_class_function():
+    # making sure we can work with the class as if the DPI doesn't
+    # exist
+    m = TestModel(42, 2)
+    v = m.foo(2)
+    assert v == 42
+
+
 def test_class_init():
-    model = TestModel(42, 1)
-    assert len(model.imports) >= 1
-    assert model.imports["sys"] == "sys"
-    assert model.func_name == "TestModel__init__"
-    # notice that the first args is self
-    assert model.args[0 + 1] == 42
-    assert model.args[1 + 1] == 1
+    model_func = TestModel.__init__
+    assert isinstance(model_func, DPIFunctionCall)
+    model_func = model_func.func_def
+    assert len(model_func.imports) >= 1
+    assert model_func.imports["sys"] == "sys"
+    assert model_func.func_name == "TestModel___init__"
 
 
-def test_get_parent_class():
-    model = TestModel(42, 1)
-    foo = model.foo
-    assert foo.func_def.parent_class == model
-    # call again
-    foo = model.foo
-    assert foo.func_def.parent_class == model
-    assert foo.func_def.func_name == "TestModel_foo"
+def test_get_dpi_func():
+    dpi_funcs = get_dpi_functions(TestModel)
+    assert len(dpi_funcs) > 1
+    found = False
+    for func in dpi_funcs:
+        if func.func_name == "TestModel_foo":
+            found = True
+    assert found
 
 
 def test_model_src():
-    model = TestModel(42, 1)
-    src = model.get_func_src()
+    src = get_class_src(TestModel)
     assert "@dpi()" not in src
 
 
 def test_model_constructor():
-    model = TestModel(42, 1)
     c_code = """
     void *ptr = {0}(42, 1);
     std::cout << ptr;
-    """.format(model.func_name)
+    """.format(TestModel.__init__.func_name)
     with tempfile.TemporaryDirectory() as temp:
-        lib_path = compile_lib([model], cwd=temp)
-        compile_and_run(lib_path, c_code, temp, [model])
+        lib_path = compile_lib([TestModel], cwd=temp)
+        compile_and_run(lib_path, c_code, temp, [TestModel])
 
 
 def test_model_function_call():
-    model = TestModel(42, 1)
     c_code = """
     void *ptr = {0}(42, 1);
     auto r = {1}(ptr, 1);
     std::cout << r;
-    """.format(model.func_name, model.foo.func_name)
+    """.format(TestModel.__init__.func_name, TestModel.foo.func_name)
     with tempfile.TemporaryDirectory() as temp:
-        calls = [model, model.foo]
+        calls = [TestModel]
         lib_path = compile_lib(calls, cwd=temp)
         output = compile_and_run(lib_path, c_code, temp, calls)
         assert int(output) == 42
 
 
+def test_error_class_sv():
+    class SomeClass:
+        def __init__(self):
+            pass
+    try:
+        check_class_ctor(SomeClass)
+        assert False
+    except SyntaxError:
+        pass
+
+
 if __name__ == "__main__":
-    test_model_function_call()
+    test_error_class_sv()
