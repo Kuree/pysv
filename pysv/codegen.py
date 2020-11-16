@@ -1,7 +1,7 @@
 from typing import Union, List
 from .function import Function, DPIFunctionCall
 from .types import DataType
-from .model import PySVModel
+from .model import check_class_ctor, get_dpi_functions
 import os
 import sys
 
@@ -60,7 +60,7 @@ def __is_class_method(func_def: Union[Function, DPIFunctionCall]):
 def __is_class_constructor(func_def: Union[Function, DPIFunctionCall]):
     if isinstance(func_def, DPIFunctionCall):
         func_def = func_def.func_def
-    return isinstance(func_def, PySVModel)
+    return func_def.is_init
 
 
 def __get_func_def(func_def: Union[Function, DPIFunctionCall]) -> Function:
@@ -79,15 +79,15 @@ def get_python_src(func_def: Union[Function, DPIFunctionCall]):
     # 2 add result call to set the result into locals
     # notice that we prefix __ to each arg using get_arg_name
     args = []
-    for n in func_def.arg_names:
-        if isinstance(func_def, PySVModel) and n == func_def.self_arg_name:
+    for idx, n in enumerate(func_def.arg_names):
+        if func_def.is_init and idx == 0:
             # skip self in the python codegen
             continue
         args.append(get_arg_name(n))
     arg_str = ", ".join(args)
-    if isinstance(func_def, PySVModel):
+    if func_def.is_init:
         # use the class name to instantiate the object
-        func_name = func_def.__class__.__name__
+        func_name = func_def.parent_class.__name__
     else:
         func_name = func_def.func_name
     result += "__result = {0}({1})\n".format(func_name, arg_str)
@@ -137,11 +137,10 @@ def get_c_function_signature(func_def: Union[Function, DPIFunctionCall], pretty_
     else:
         padding = ", "
     args = []
-    for name in func_def.arg_names:
-        if isinstance(func_def, PySVModel):
-            if name == func_def.self_arg_name:
-                # class constructor don't need the first self
-                continue
+    for idx, name in enumerate(func_def.arg_names):
+        if func_def.is_init and idx == 0:
+            # class constructor don't need the first self
+            continue
         t = func_def.arg_types[name]
         t_str = get_c_type_str(t)
         args.append("{0} {1}".format(t_str, name))
@@ -158,11 +157,10 @@ def generate_local_variables(func_def: Union[Function, DPIFunctionCall]):
     func_def = __get_func_def(func_def)
     result = __INDENTATION + "auto locals = py::dict();\n"
     # assigning values
-    for n in func_def.arg_names:
-        if isinstance(func_def, PySVModel):
-            if n == func_def.self_arg_name:
-                # class constructor don't need the first self
-                continue
+    for idx, n in enumerate(func_def.arg_names):
+        if func_def.is_init and idx == 0:
+            # class constructor don't need the first self
+            continue
         str_name = get_arg_name(n)
         s = __INDENTATION + 'locals["{0}"] = {1};\n'.format(str_name, n)
         result += s
@@ -186,17 +184,13 @@ def generate_global_variables(func_def: Union[Function, DPIFunctionCall]):
 def generate_execute_code(func_def: Union[Function, DPIFunctionCall], pretty_print=True):
     func_def = __get_func_def(func_def)
     # depends on whether it's class method or not
-    if func_def.parent_class is not None:
-        parent: PySVModel = func_def.parent_class
+    if func_def.parent_class is not None and not func_def.is_init:
         # grab values from the locals
-        arg_names = [parent.self_arg_name, '"{0}"'.format(func_def.base_name)]
-        for arg_name in func_def.arg_names:
-            if arg_name == parent.self_arg_name:
-                # no need self
-                continue
+        arg_names = [func_def.arg_names[0], '"{0}"'.format(func_def.base_name)]
+        for arg_name in func_def.arg_names[1:]:
             arg = 'locals["{0}"]'.format(get_arg_name(arg_name))
             arg_names.append(arg)
-        result = 'locals["__result"] = call_class_func('
+        result = __INDENTATION + 'locals["__result"] = call_class_func('
         if pretty_print:
             padding = ",\n" + len(result) * " "
         else:
@@ -213,7 +207,7 @@ def generate_execute_code(func_def: Union[Function, DPIFunctionCall], pretty_pri
 
 def generate_return_value(func_def: Union[Function, DPIFunctionCall]):
     func_def = __get_func_def(func_def)
-    result = __INDENTATION
+    result = ""
     # notice that string is different since we need to use a global static
     # value to avoid memory leak
     return_type = func_def.return_type
@@ -222,14 +216,14 @@ def generate_return_value(func_def: Union[Function, DPIFunctionCall]):
         return ""
     elif return_type == DataType.String:
         # special care for string
-        result += '{0} = locals["__result"].cast<std::string>();\n'.format(__GLOBAL_STRING_VAR_NAME)
+        result += __INDENTATION + '{0} = locals["__result"].cast<std::string>();\n'.format(__GLOBAL_STRING_VAR_NAME)
         result += __INDENTATION + "return {0}.c_str();\n".format(__GLOBAL_STRING_VAR_NAME)
     elif return_type == DataType.CHandle:
         # need to call the cxx function
         result += __INDENTATION + "return create_class_func(locals);\n"
     else:
         return_type_str = get_c_type_str(return_type)
-        result += 'return locals["__result"].cast<{0}>();\n'.format(return_type_str)
+        result += __INDENTATION + 'return locals["__result"].cast<{0}>();\n'.format(return_type_str)
     return result
 
 
@@ -287,13 +281,23 @@ def generate_bootstrap_code(pretty_print=True, add_sys_path=True, add_class=True
     return result
 
 
-def generate_cxx_code(func_defs: List[Union[Function, DPIFunctionCall]], pretty_print: bool = True,
+def generate_cxx_code(func_defs: List[Union[type, DPIFunctionCall]], pretty_print: bool = True,
                       add_sys_path: bool = True, add_class: bool = True):
     result = generate_bootstrap_code(pretty_print, add_sys_path=add_sys_path, add_class=add_class) + "\n"
     # generate extern C block
     result += 'extern "C" {\n'
     code_blocks = []
-    for func_def in func_defs:
+    new_defs: List[DPIFunctionCall] = []
+    for func in func_defs:
+        if type(func) == type:
+            check_class_ctor(func)
+            funcs = get_dpi_functions(func)
+            for f in funcs:
+                new_defs.append(f)
+        else:
+            assert isinstance(func, DPIFunctionCall)
+            new_defs.append(func)
+    for func_def in new_defs:
         code_blocks.append(generate_cxx_function(func_def, pretty_print=pretty_print, add_sys_path=add_sys_path))
     result += "\n".join(code_blocks)
     result += "}\n"

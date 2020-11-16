@@ -2,12 +2,18 @@ import subprocess
 import os
 from pysv import generate_c_header
 import shutil
+from .model import get_dpi_functions
 
 
 def get_cxx_headers(func_defs):
     headers = []
     for func_def in func_defs:
-        headers.append(generate_c_header(func_def))
+        if type(func_def) == type:
+            funcs = get_dpi_functions(func_def)
+            for f in funcs:
+                headers.append(generate_c_header(f))
+        else:
+            headers.append(generate_c_header(func_def))
     result = "#include <iostream>\n"
     result += 'extern "C" {\n'
     result += "\n".join(headers)

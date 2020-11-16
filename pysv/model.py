@@ -1,132 +1,33 @@
 import inspect
 import astor
 import ast
-import types
 import textwrap
-from .function import dpi, DPIFunctionCall, Function
+from .function import dpi, DPIFunctionCall
 from .types import DataType
-from .frame import _inspect_frame
 
 
-class __ArgNameVisitor(ast.NodeVisitor):
-    def __init__(self):
-        self.arg_names = []
-
-    def visit_arg(self, node: ast.arg):
-        self.arg_names.append(node.arg)
-        self.generic_visit(node)
-
-
-def get_func_args(src):
-    class_tree = ast.parse(textwrap.dedent(src))
-    assert isinstance(class_tree.body[0], ast.FunctionDef)
-    args = class_tree.body[0].args
-    visitor = __ArgNameVisitor()
-    visitor.visit(args)
-    return visitor.arg_names
-
-
-class PySVModel(Function):
-    def __init__(self):
-        super().__init__()
-        # need to figure out the args and arg names
-        self.imports = _inspect_frame()
-        frame = inspect.currentframe().f_back
-        code = inspect.getsource(frame.f_code)
-        signatures = get_func_args(code)
-        local_vars = frame.f_locals
-        # decide types here
-        self.arg_names = []
-        self.arg_types = {}
-        self.args = []
-        self.self_arg_name = "self"
-        for idx, arg_name in enumerate(signatures):
-            arg = local_vars[arg_name]
-            if idx == 0:
-                assert isinstance(arg, PySVModel)
-                # change it to handle object
-                t = DataType.CHandle
-                self.self_arg_name = arg_name
+def get_dpi_functions(cls: type):
+    attrs = [(a, getattr(cls, a)) for a in dir(cls)]
+    result = []
+    for attr_name, attr in attrs:
+        if isinstance(attr, DPIFunctionCall):
+            result.append(attr)
+            # set init as well
+            if attr_name == "__init__":
+                attr.func_def.is_init = True
+                # return type is c_handle
+                attr.func_def.return_type = DataType.CHandle
             else:
-                if isinstance(arg, str):
-                    t = DataType.String
-                elif isinstance(arg, int):
-                    t = DataType.Int
-                elif isinstance(arg, object):
-                    t = DataType.CHandle
-                else:
-                    raise ValueError("Unable to convert {0}({1}) to C types".format(arg_name, arg))
-            self.arg_names.append(arg_name)
-            self.arg_types[arg_name] = t
-            # notice that "self" is included. code generator need to make sure that
-            # proper pointer is used
-            self.args.append(arg)
-        # returns a pointer to self
-        self.return_type = DataType.CHandle
+                # normal function call
+                # set the first argument to be chandle
+                attr.func_def.arg_types[attr.func_def.arg_names[0]] = DataType.CHandle
+    return result
 
-    def __getattribute__(self, name):
-        obj = object.__getattribute__(self, name)
-        if isinstance(obj, DPIFunctionCall):
-            func_def = obj.func_def
-            if func_def.parent_class is not None:
-                assert func_def.parent_class.__class__ == self.__class__
-                func_def.arg_types[func_def.arg_names[0]] = DataType.CHandle
-            else:
-                func_def.parent_class = self
-        return obj
 
-    class __HasDPIVisitor(ast.NodeVisitor):
-        def __init__(self):
-            self.result = False
-
-        def visit_Name(self, node: ast.Name):
-            if node.id == "dpi" or node.id == dpi.__name__:
-                self.result = True
-            self.generic_visit(node)
-
-    @staticmethod
-    def __has_dpi_deco(node):
-        visitor = PySVModel.__HasDPIVisitor()
-        visitor.visit(node)
-        return visitor.result
-
-    def get_func_src(self):
-        # we need to remove all the @dpi decorators in the ast
-        # so that they can actually be called
-        code = inspect.getsource(self.__class__)
-        class_tree = ast.parse(textwrap.dedent(code))
-        # need to clear out any DPI function decorator
-        class_ast = class_tree.body[0]
-        assert isinstance(class_ast, ast.ClassDef)
-        class_body = class_ast.body
-        for ast_block in class_body:
-            if isinstance(ast_block, ast.FunctionDef):
-                ast_block.decorator_list = [node for node in ast_block.decorator_list if not self.__has_dpi_deco(node)]
-
-        src = astor.to_source(class_tree)
-        # need to redirect PySVModel into object
-        src = "PySVModel = object\n" + src
-        return src
-
-    @property
-    def func_name(self):
-        # hardcode the func name
-        return self.__class__.__name__ + "__init__"
-
-    @property
-    def base_name(self):
-        return "__init__"
-
-    @dpi(return_type=DataType.Void)
-    def destroy(self):
-        # actual implementation provided by the codegen
-        pass
-
-    @classmethod
-    def get_dpi_functions(cls):
-        attrs = [getattr(cls, a) for a in dir(cls)]
-        result = []
-        for attr in attrs:
-            if isinstance(attr, DPIFunctionCall):
-                result.append(attr)
-        return result
+def check_class_ctor(cls: type):
+    ctor = cls.__init__
+    if not isinstance(ctor, DPIFunctionCall):
+        # it's a normal init ctor
+        # make sure that it doesn't have any extra parameters
+        signature = inspect.signature(ctor)
+        assert len(signature.parameters) == 1, "Class __init__ needs to have @dpi decorator"
