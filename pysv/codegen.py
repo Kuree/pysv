@@ -388,7 +388,8 @@ def generate_sv_class(func_def, pretty_print: bool = True):
     return result
 
 
-def generate_sv_binding(func_defs: List[Union[type, DPIFunctionCall]], pkg_name="", pretty_print: bool = True):
+def generate_sv_binding(func_defs: List[Union[type, DPIFunctionCall]], pkg_name="", pretty_print: bool = True,
+                        filename=None):
     if len(pkg_name) == 0:
         pkg_name = "pysv"
     guard_name = "PYSV_" + pkg_name.upper()
@@ -412,6 +413,10 @@ def generate_sv_binding(func_defs: List[Union[type, DPIFunctionCall]], pkg_name=
     result += "endpackage\n"
     # end of guard
     result += "`endif // {0}\n".format(guard_name)
+
+    if filename is not None:
+        with open(filename, "w+") as f:
+            f.write(filename)
 
     return result
 
