@@ -22,29 +22,55 @@ def __get_code_snippet(name):
         return f.read() + "\n"
 
 
-def generate_dpi_definition(func_def: Union[Function, DPIFunctionCall],
-                            pretty_print=True):
+def generate_dpi_signature(func_def: Union[Function, DPIFunctionCall],
+                           pretty_print=True, is_class=False):
     if isinstance(func_def, DPIFunctionCall):
         func_def = func_def.func_def
     assert isinstance(func_def, Function), "Only " + Function.__name__ + " allowed"
     # generate args
     # python doesn't have output or ref semantics
     args = []
-    for arg_name in func_def.arg_names:
+    for idx, arg_name in enumerate(func_def.arg_names):
+        # skip the first one for function
+        if (is_class or func_def.base_name == "__init__") and idx == 0:
+            continue
         arg_type = func_def.arg_types[arg_name]
         arg_type_str = arg_type.value
         args.append("input {0} {1}".format(arg_type_str, arg_name))
 
-    dpi_str = 'import "DPI-C" function'
-    return_type_str = func_def.return_type.value
-    func_name = func_def.func_name
-    result = "{0} {1} {2}(".format(dpi_str, return_type_str, func_name)
+    if is_class:
+        dpi_str = "function"
+    else:
+        dpi_str = 'import "DPI-C" function'
+
+    if is_class and func_def.base_name == "__init__":
+        return_type_str = ""
+    else:
+        return_type_str = func_def.return_type.value
+
+    if is_class:
+        func_name = func_def.base_name
+        if func_name == "__init__":
+            # constructor
+            func_name = "new"
+    else:
+        func_name = func_def.func_name
+    func_name += "("
+    result = " ".join([s for s in [dpi_str, return_type_str, func_name] if s])
     if pretty_print:
         padding = ",\n" + len(result) * " "
     else:
         padding = ", "
     arg_str = padding.join(args)
     result = "{0}{1});".format(result, arg_str)
+    return result
+
+
+def generate_dpi_definitions(func_defs, pretty_print=True):
+    new_defs = __get_func_defs(func_defs)
+    result = ""
+    for func in new_defs:
+        result += "{0}\n".format(generate_dpi_signature(func, pretty_print))
     return result
 
 
@@ -69,6 +95,20 @@ def __get_func_def(func_def: Union[Function, DPIFunctionCall]) -> Function:
         func_def = func_def.func_def
     assert isinstance(func_def, Function)
     return func_def
+
+
+def __get_func_defs(func_defs):
+    new_defs: List[DPIFunctionCall] = []
+    for func in func_defs:
+        if type(func) == type:
+            check_class_ctor(func)
+            funcs = get_dpi_functions(func)
+            for f in funcs:
+                new_defs.append(f)
+        else:
+            assert isinstance(func, DPIFunctionCall)
+            new_defs.append(func)
+    return new_defs
 
 
 def get_python_src(func_def: Union[Function, DPIFunctionCall]):
@@ -289,16 +329,7 @@ def generate_cxx_code(func_defs: List[Union[type, DPIFunctionCall]], pretty_prin
     # generate extern C block
     result += 'extern "C" {\n'
     code_blocks = []
-    new_defs: List[DPIFunctionCall] = []
-    for func in func_defs:
-        if type(func) == type:
-            check_class_ctor(func)
-            funcs = get_dpi_functions(func)
-            for f in funcs:
-                new_defs.append(f)
-        else:
-            assert isinstance(func, DPIFunctionCall)
-            new_defs.append(func)
+    new_defs = __get_func_defs(func_defs)
     for func_def in new_defs:
         code_blocks.append(generate_cxx_function(func_def, pretty_print=pretty_print, add_sys_path=add_sys_path))
     result += "\n".join(code_blocks)
@@ -326,4 +357,61 @@ def generate_cxx_headers(func_defs):
     result += "\n}\n"
     return result
 
+
+def generate_sv_class(func_def, pretty_print: bool = True):
+    result = ""
+    cls = func_def
+    assert cls is not None
+    class_name = cls.__name__
+    funcs = get_dpi_functions(cls)
+    result += "class {0};\n".format(class_name)
+    # a local chandle
+    chandle_name = "pysv_ptr"
+    result += __INDENTATION + "local chandle {0};\n".format(chandle_name)
+    for func in funcs:
+        sig = generate_dpi_signature(func, pretty_print=pretty_print, is_class=True)
+        result += __INDENTATION + sig + "\n"
+        # generate the call
+        args = [chandle_name] + func.func_def.arg_names[1:]
+        if func.func_def.base_name == "__init__":
+            # don't need to first self
+            args = args[1:]
+        args = ", ".join(args)
+        if func.func_def.base_name == "__init__":
+            var_assign = chandle_name + " = "
+        else:
+            var_assign = ""
+        result += __INDENTATION * 2 + var_assign + func.func_def.func_name + "({0});\n".format(args)
+        result += __INDENTATION + "endfunction\n"
+
+    result += "endclass\n"
+    return result
+
+
+def generate_sv_binding(func_defs: List[Union[type, DPIFunctionCall]], pkg_name="", pretty_print: bool = True):
+    if len(pkg_name) == 0:
+        pkg_name = "pysv"
+    guard_name = "PYSV_" + pkg_name.upper()
+    result = ""
+    # generate the guard
+    result += "`ifndef {0}\n".format(guard_name)
+    result += "`define {0}\n".format(guard_name)
+
+    # package
+    result += "package {0};\n".format(pkg_name)
+
+    # produce DPI imports
+    result += generate_dpi_definitions(func_defs, pretty_print)
+
+    # generate class definition
+    for func_def in func_defs:
+        if type(func_def) == type:
+            result += generate_sv_class(func_def, pretty_print)
+
+    # end of package
+    result += "endpackage\n"
+    # end of guard
+    result += "`endif // {0}\n".format(guard_name)
+
+    return result
 

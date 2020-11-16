@@ -1,5 +1,5 @@
 import inspect
-from .function import DPIFunctionCall
+from .function import DPIFunctionCall, DPIFunction
 from .types import DataType
 
 
@@ -29,3 +29,9 @@ def check_class_ctor(cls: type):
         signature = inspect.signature(ctor)
         assert len(signature.parameters) == 1, """Class constructor has more arguments than simple
 self is required to have @sv decorator"""
+        # generate a wrapper
+        func_def = DPIFunction(return_type=DataType.Void)
+        func_def.parent_class = cls
+        call = func_def(ctor)
+        func_def.arg_types[func_def.arg_names[0]] = DataType.CHandle
+        cls.__init__ = call
