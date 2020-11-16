@@ -57,7 +57,6 @@ computation.
    class Array:
        def __init__(self):
            # constructor without any extra argument is exported to SV directly
-           super().__init__()
            self.__array = []
 
        @sv()
