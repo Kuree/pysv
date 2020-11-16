@@ -12,13 +12,19 @@ if(UNIX AND NOT APPLE)
     set(CMAKE_CXX_FLAGS "-Wl,--whole-archive -Wl,--no-whole-archive -lgcc -lstdc++")
 endif()
 
-pybind11_add_module(${TARGET} ${TARGET}.cc)
+pybind11_add_module(${TARGET} SHARED ${TARGET}.cc)
 
 target_link_libraries(${TARGET} PUBLIC ${STATIC_FLAG})
 target_link_libraries(${TARGET} PRIVATE pybind11::embed)
+
+if(APPLE)
+  set(SHARED_LIB_EXT ".dylib")
+else()
+  set(SHARED_LIB_EXT ".so")
+endif()
 # use the default system suffix
 set_target_properties(${TARGET} PROPERTIES PREFIX ""
-        SUFFIX ".so")
+        SUFFIX ${SHARED_LIB_EXT})
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     set_target_properties(${TARGET} PROPERTIES COMPILE_FLAGS -fsized-deallocation)
