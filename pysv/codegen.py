@@ -2,6 +2,7 @@ from typing import Union, List
 from .function import Function, DPIFunctionCall
 from .types import DataType
 from .model import check_class_ctor, get_dpi_functions
+from .util import should_add_class
 import os
 import sys
 
@@ -282,7 +283,8 @@ def generate_bootstrap_code(pretty_print=True, add_sys_path=True, add_class=True
 
 
 def generate_cxx_code(func_defs: List[Union[type, DPIFunctionCall]], pretty_print: bool = True,
-                      add_sys_path: bool = True, add_class: bool = True):
+                      add_sys_path: bool = True):
+    add_class = should_add_class(func_defs)
     result = generate_bootstrap_code(pretty_print, add_sys_path=add_sys_path, add_class=add_class) + "\n"
     # generate extern C block
     result += 'extern "C" {\n'
@@ -307,3 +309,21 @@ def generate_cxx_code(func_defs: List[Union[type, DPIFunctionCall]], pretty_prin
 def generate_c_header(func_def: Union[Function, DPIFunctionCall], pretty_print: bool = True):
     return get_c_function_signature(func_def, pretty_print=pretty_print,
                                     include_attribute=False) + ";"
+
+
+def generate_cxx_headers(func_defs):
+    headers = []
+    for func_def in func_defs:
+        if type(func_def) == type:
+            funcs = get_dpi_functions(func_def)
+            for f in funcs:
+                headers.append(generate_c_header(f))
+        else:
+            headers.append(generate_c_header(func_def))
+    result = "#include <iostream>\n"
+    result += 'extern "C" {\n'
+    result += "\n".join(headers)
+    result += "\n}\n"
+    return result
+
+

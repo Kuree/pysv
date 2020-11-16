@@ -1,6 +1,6 @@
 import sys  # don't remove this import
 from pysv import dpi, compile_lib
-from pysv.util import compile_and_run
+from pysv.compile import compile_and_run
 from pysv.function import DPIFunctionCall
 from pysv.model import get_dpi_functions
 from pysv.pyast import get_class_src

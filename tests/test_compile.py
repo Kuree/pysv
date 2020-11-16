@@ -1,7 +1,7 @@
 from pysv import compile_lib, dpi, DataType, set_run_function
 import os
 import tempfile
-from pysv.util import compile_and_run, simply_dpi_call_compile
+from pysv.compile import compile_and_run, simply_dpi_call_compile
 
 
 def test_compile():
