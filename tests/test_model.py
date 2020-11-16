@@ -2,7 +2,7 @@ import sys  # don't remove this import
 from pysv import sv, compile_lib
 from pysv.compile import compile_and_run
 from pysv.function import DPIFunctionCall
-from pysv.model import get_dpi_functions
+from pysv.model import get_dpi_functions, check_class_ctor
 from pysv.pyast import get_class_src
 import tempfile
 
@@ -75,5 +75,16 @@ def test_model_function_call():
         assert int(output) == 42
 
 
+def test_error_class_sv():
+    class SomeClass:
+        def __init__(self):
+            pass
+    try:
+        check_class_ctor(SomeClass)
+        assert False
+    except SyntaxError:
+        pass
+
+
 if __name__ == "__main__":
-    test_model_function_call()
+    test_error_class_sv()
