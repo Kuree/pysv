@@ -1,7 +1,7 @@
 from typing import Union, List
 from .function import Function, DPIFunctionCall
 from .types import DataType
-from .model import check_class_ctor, get_dpi_functions, inject_destructor
+from .model import check_class_ctor, get_dpi_functions, inject_destructor, check_class_method
 from .util import should_add_class, should_add_sys_path
 import os
 import sys
@@ -115,6 +115,7 @@ def __initialize_class_defs(func_defs):
         if type(func) == type:
             check_class_ctor(func)
             inject_destructor(func)
+            check_class_method(func)
 
 
 def get_python_src(func_def: Union[Function, DPIFunctionCall]):

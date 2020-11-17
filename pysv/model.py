@@ -47,6 +47,13 @@ self is required to have @sv decorator"""
         cls.__init__ = call
 
 
+def check_class_method(cls: type):
+    func_defs = get_dpi_functions(cls)
+    for func_def in func_defs:
+        assert func_def.func_def.base_name[0] != "_", "Protected/Private methods not allowed to " \
+                                                      "be exported to SystemVerilog"
+
+
 def inject_destructor(cls: type):
     assert type(cls) == type
     # use keyword "destroy" as the destructor function name
