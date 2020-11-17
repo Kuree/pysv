@@ -3,6 +3,7 @@ from pysv import sv, compile_lib, DataType, generate_cxx_binding, generate_sv_bi
 import tempfile
 import pytest
 import os
+import numpy as np
 
 
 class BoxFilter:
@@ -18,10 +19,8 @@ class BoxFilter:
 
     @sv(return_type=DataType.UInt)
     def avg(self):
-        result = 0
-        for v in self.__values:
-            result += v
-        return result // len(self.__values)
+        # use numpy to implement average
+        return int(np.average(self.__values))
 
 
 @pytest.mark.skipif(not pysv.util.is_verilator_available(), reason="Verilator not available")
@@ -53,12 +52,13 @@ def test_sv_simulator(get_vector_filename, simulator):
         sv_pkg = os.path.join(os.path.abspath(temp), "pysv_pkg.sv")
         generate_sv_binding([BoxFilter], filename=sv_pkg)
         sv_file = get_vector_filename("box_filter.sv")
+        tb_file = get_vector_filename("test_sv_boxfilter.sv")
 
         if simulator == "vcs":
             tester_cls = pysv.util.VCSTester
         else:
             tester_cls = pysv.util.XceliumTester
-        tester = tester_cls(lib_path, sv_pkg, sv_file, cwd=temp)
+        tester = tester_cls(lib_path, sv_pkg, sv_file, tb_file, cwd=temp)
 
         tester.run()
 

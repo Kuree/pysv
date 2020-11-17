@@ -136,6 +136,7 @@ class CadenceTester(Tester):
     def __init__(self, lib_path, *files: str, cwd=None, clean_up_run=False):
         super().__init__(lib_path, *files, cwd=cwd, clean_up_run=clean_up_run)
         self.toolchain = ""
+        self.lib_path = os.path.relpath(self.lib_path, cwd)
 
     def run(self, blocking=True):
         assert len(self.toolchain) > 0

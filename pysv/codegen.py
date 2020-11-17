@@ -299,10 +299,10 @@ def generate_cxx_function(func_def: Union[Function, DPIFunctionCall], pretty_pri
                           add_sys_path: bool = True):
     result = get_c_function_signature(func_def, pretty_print)
     result += " {\n"
-    result += generate_global_variables(func_def)
-    result += generate_local_variables(func_def)
     if add_sys_path:
         result += generate_sys_path_check()
+    result += generate_global_variables(func_def)
+    result += generate_local_variables(func_def)
     result += generate_execute_code(func_def, pretty_print)
     result += generate_return_value(func_def)
     result += "}\n"
