@@ -17,11 +17,8 @@ pybind11_add_module(${TARGET} SHARED ${TARGET}.cc)
 target_link_libraries(${TARGET} PUBLIC ${STATIC_FLAG})
 target_link_libraries(${TARGET} PRIVATE pybind11::embed)
 
-if(APPLE)
-  set(SHARED_LIB_EXT ".dylib")
-else()
-  set(SHARED_LIB_EXT ".so")
-endif()
+set(SHARED_LIB_EXT ".so")
+
 # use the default system suffix
 set_target_properties(${TARGET} PROPERTIES PREFIX ""
         SUFFIX ${SHARED_LIB_EXT})

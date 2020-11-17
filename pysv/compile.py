@@ -55,10 +55,7 @@ def compile_lib(func_defs, cwd, lib_name="pysv", pretty_print=True, release_buil
     subprocess.check_call(["cmake", "--build", "."], cwd=build_dir)
 
     # make sure the actual so file exists
-    if platform.system() == "Darwin":
-        shared_lib_ext = ".dylib"
-    else:
-        shared_lib_ext = ".so"
+    shared_lib_ext = ".so"
     lib_file = os.path.join(build_dir, lib_name + shared_lib_ext)
     if not os.path.isfile(lib_file):
         raise FileNotFoundError("Not able to compile " + lib_file)
