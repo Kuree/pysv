@@ -54,7 +54,12 @@ def test_sv_simulator(get_vector_filename, simulator):
         generate_sv_binding([BoxFilter], filename=sv_pkg)
         sv_file = get_vector_filename("box_filter.sv")
 
-        tester = pysv.util.VCSTester(lib_path, sv_pkg, sv_file, cwd=temp)
+        if simulator == "vcs":
+            tester_cls = pysv.util.VCSTester
+        else:
+            tester_cls = pysv.util.XceliumTester
+        tester = tester_cls(lib_path, sv_pkg, sv_file, cwd=temp)
+
         tester.run()
 
 

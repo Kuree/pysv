@@ -12,7 +12,11 @@ if(UNIX AND NOT APPLE)
     set(CMAKE_CXX_FLAGS "-Wl,--whole-archive -Wl,--no-whole-archive -lgcc -lstdc++")
 endif()
 
-pybind11_add_module(${TARGET} SHARED ${TARGET}.cc)
+if (APPLE)
+    pybind11_add_module(${TARGET} SHARED ${TARGET}.cc)
+else()
+    pybind11_add_module(${TARGET} MODULE ${TARGET}.cc)
+endif()
 
 target_link_libraries(${TARGET} PUBLIC ${STATIC_FLAG})
 target_link_libraries(${TARGET} PRIVATE pybind11::embed)

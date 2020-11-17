@@ -2,7 +2,7 @@ import inspect
 import types
 from typing import Dict
 
-__EXCLUDE_MODULE_NAME = {"__builtins__", "@py_builtins", "@pytest_ar"}
+__EXCLUDE_MODULE_NAME = {"__builtins__", "@py_builtins", "@pytest_ar", "pytest", "pysv"}
 
 
 def _inspect_frame(num_frame=2) -> Dict[str, str]:
