@@ -5,7 +5,7 @@ import shutil
 import platform
 
 
-def compile_lib(func_defs, cwd, lib_name="pysv", pretty_print=True, release_build=False):
+def compile_lib(func_defs, cwd, lib_name="pysv", pretty_print=True, release_build=False, clean_up_build=False):
     if not os.path.isdir(cwd):
         os.makedirs(cwd, exist_ok=True)
     # need to copy stuff over
@@ -58,6 +58,16 @@ def compile_lib(func_defs, cwd, lib_name="pysv", pretty_print=True, release_buil
     lib_file = os.path.join(build_dir, lib_name + shared_lib_ext)
     if not os.path.isfile(lib_file):
         raise FileNotFoundError("Not able to compile " + lib_file)
+
+    # need to move the lib_file to the parent cwd folder
+    dst_lib_file = os.path.join(cwd, os.path.basename(lib_file))
+    shutil.copy(lib_file, dst_lib_file)
+    lib_file = dst_lib_file
+    assert os.path.isfile(lib_file)
+
+    if clean_up_build:
+        shutil.rmtree(build_dir, ignore_errors=True)
+
     return lib_file
 
 
