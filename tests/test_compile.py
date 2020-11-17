@@ -1,7 +1,7 @@
 from pysv import compile_lib, sv, DataType, set_run_function
 import os
 import tempfile
-from pysv.compile import compile_and_run, simply_dpi_call_compile
+from pysv.compile import compile_and_run
 
 
 def test_compile():
@@ -45,7 +45,7 @@ def test_numpy():
 
     with tempfile.TemporaryDirectory() as temp:
         lib_file = compile_lib([min_], cwd=temp)
-        call_str = simply_dpi_call_compile(min_, -1, -2)
+        call_str = min_.make_call(-1, -2).str()
         code = """
         auto r = {0};
         std::cout << r << std::endl;

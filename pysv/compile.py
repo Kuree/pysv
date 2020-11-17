@@ -98,13 +98,3 @@ def compile_and_run(lib_path, cxx_content, cwd, func_defs, extra_headers=""):
     output = subprocess.check_output(os.path.join(cwd, "test_cxx"), env=env)
     output = output.decode("utf-8")
     return output
-
-
-def simply_dpi_call_compile(dpi_call, *args):
-    result = dpi_call.func_def.func_name
-    arg_values = []
-    for arg in args:
-        arg_values.append(str(arg))
-    result += "(" + ", ".join(arg_values) + ")"
-
-    return result
