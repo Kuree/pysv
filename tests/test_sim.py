@@ -1,5 +1,5 @@
 import pysv.util
-from pysv import sv, compile_lib, DataType, generate_cxx_binding
+from pysv import sv, compile_lib, DataType, generate_cxx_binding, generate_sv_binding
 import tempfile
 import pytest
 import os
@@ -40,8 +40,20 @@ def test_verilator(get_vector_filename):
         tester.run()
 
 
+@pytest.mark.skipif(not pysv.util.is_xcelium_available(), reason="Xcelium not available")
+def test_sv_simulator(get_vector_filename):
+    with tempfile.TemporaryDirectory() as temp:
+        lib_path = compile_lib([BoxFilter], cwd=temp)
+        sv_pkg = os.path.join(os.path.abspath(temp), "pysv_pkg.sv")
+        generate_sv_binding([BoxFilter], filename=sv_pkg)
+        sv_file = get_vector_filename("box_filter.sv")
+
+        tester = pysv.util.XceliumTester(lib_path, sv_pkg, sv_file, cwd=temp)
+        tester.run()
+
+
 if __name__ == "__main__":
     from conftest import get_vector_filename_fn
-    test_verilator(get_vector_filename_fn)
+    test_sv_simulator(get_vector_filename_fn)
 
 

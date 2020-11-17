@@ -457,7 +457,7 @@ def generate_sv_binding(func_defs: List[Union[type, DPIFunctionCall]], pkg_name=
 
     if filename is not None:
         with open(filename, "w+") as f:
-            f.write(filename)
+            f.write(result)
 
     return result
 

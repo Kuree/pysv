@@ -140,7 +140,7 @@ class CadenceTester(Tester):
 
     def run(self, blocking=True):
         assert len(self.toolchain) > 0
-        env = self._set_lib_env(self.cwd)
+        env = self._set_lib_env()
         # run it
         args = [self.toolchain] + list(self.files) + self.__get_flag()
         print("Running", self.toolchain)
