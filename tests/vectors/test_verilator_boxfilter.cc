@@ -1,11 +1,11 @@
-#include "Vtest_verilator_boxfilter.h"
+#include "Vbox_filter.h"
 #include "box_filter.hh"
 #include <exception>
 #include <random>
 #include <iostream>
 
 int main () {
-    Vtest_verilator_boxfilter vtop;
+    Vbox_filter vtop;
     pysv::BoxFilter model(4);
 
     vtop.clk = 0;

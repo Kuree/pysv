@@ -33,7 +33,7 @@ def test_verilator(get_vector_filename):
 
         # we have three files
         # the sv file, the driver file, and the header
-        sv_file = get_vector_filename("test_verilator_boxfilter.sv")
+        sv_file = get_vector_filename("box_filter.sv")
         driver = get_vector_filename("test_verilator_boxfilter.cc")
         # just run teh verilator
         tester = pysv.util.VerilatorTester(lib_path, sv_file, header_file, driver, cwd=temp)

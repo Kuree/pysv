@@ -116,13 +116,14 @@ class VerilatorTester(Tester):
         env = self._set_lib_env()
 
         # find the shortest file
-        mk_files = []
-        for file in os.listdir(os.path.join(self.cwd, "obj_dir")):
-            if file.endswith(".mk"):
-                mk_files.append(file)
-        mk_files.sort(key=lambda x: len(x))
-        assert len(mk_files) > 0, "Unable to find any makefile from Verilator"
-        mk_file = mk_files[0]
+        # automatic detect the makefile
+        mk_file = ""
+        for f in self.files:
+            name, ext = os.path.splitext(os.path.basename(f))
+            if ext == ".sv" or ext == ".v":
+                mk_file = "V" + name + ".mk"
+                break
+        assert len(mk_file) > 0, "Unable to find any makefile from Verilator"
         # make the file
         subprocess.check_call(["make", "-C", "obj_dir", "-f", mk_file],
                               cwd=self.cwd, env=env)
