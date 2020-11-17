@@ -11,6 +11,7 @@ localparam PTR_SIZE = $clog2(FILTER_SIZE);
 
 logic [FILTER_SIZE-1:0][31:0] values;
 logic [PTR_SIZE-1:0] ptr;
+logic [31:0] result;
 
 always_ff @(posedge clk, posedge rst) begin
     if (rst) begin
@@ -24,7 +25,7 @@ always_ff @(posedge clk, posedge rst) begin
 end
 
 always_comb begin
-    logic [31:0] result = 0;
+    result = 0;
     for (int i = 0; i < FILTER_SIZE; i++) begin
         result += values[i];
     end
