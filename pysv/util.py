@@ -129,7 +129,6 @@ class VerilatorTester(Tester):
                               cwd=self.cwd, env=env)
         # run the application
         name = os.path.join("obj_dir", mk_file.replace(".mk", ""))
-        print("Running " + name)
         self._run([name], self.cwd, env, blocking)
 
 
@@ -143,7 +142,6 @@ class CadenceTester(Tester):
         env = self._set_lib_env()
         # run it
         args = [self.toolchain] + list(self.files) + self.__get_flag()
-        print("Running", self.toolchain)
         self._run(args, self.cwd, env, blocking)
 
     def __get_flag(self):
@@ -154,3 +152,19 @@ class XceliumTester(CadenceTester):
     def __init__(self, lib_path, *files: str, cwd=None, clean_up_run=False):
         super().__init__(lib_path, *files, cwd=cwd, clean_up_run=clean_up_run)
         self.toolchain = "xrun"
+
+
+class VCSTester(Tester):
+    def __init__(self, lib_path, *files: str, cwd=None, clean_up_run=False):
+        super().__init__(lib_path, *files, cwd=cwd, clean_up_run=clean_up_run)
+
+    def run(self, blocking=True):
+        env = self._set_lib_env()
+        # run it
+        args = ["vcs"] + list(self.files) + self.__get_flag()
+        self._run(args, self.cwd, env, True)
+        # run the simv
+        self._run(["./simv"], self.cwd, env, blocking)
+
+    def __get_flag(self):
+        return ["-sv_lib", self.lib_path, "-sverilog"]
