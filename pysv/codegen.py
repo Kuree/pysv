@@ -32,7 +32,7 @@ def generate_dpi_signature(func_def: Union[Function, DPIFunctionCall],
     args = []
     for idx, arg_name in enumerate(func_def.arg_names):
         # skip the first one for function
-        if (is_class or func_def.base_name == "__init__") and idx == 0:
+        if (is_class or func_def.is_init) and idx == 0:
             continue
         arg_type = func_def.arg_types[arg_name]
         arg_type_str = arg_type.value
@@ -43,16 +43,16 @@ def generate_dpi_signature(func_def: Union[Function, DPIFunctionCall],
     else:
         dpi_str = 'import "DPI-C" function'
 
-    if is_class and func_def.base_name == "__init__":
+    if is_class and func_def.is_init:
         return_type_str = ""
     else:
         return_type_str = func_def.return_type.value
 
     if is_class:
-        func_name = func_def.base_name
-        if func_name == "__init__":
-            # constructor
+        if func_def.is_init:
             func_name = "new"
+        else:
+            func_name = func_def.base_name
     else:
         func_name = func_def.func_name
     func_name += "("
@@ -171,21 +171,33 @@ def get_c_type_str(data_type: DataType):    # pragma: no cover
         raise ValueError(data_type)
 
 
-def get_c_function_signature(func_def: Union[Function, DPIFunctionCall], pretty_print=True, include_attribute=True):
+def get_c_function_signature(func_def: Union[Function, DPIFunctionCall], pretty_print=True, include_attribute=True,
+                             is_class=False, class_name=""):
     func_def = __get_func_def(func_def)
     return_type = get_c_type_str(func_def.return_type)
     if include_attribute:
         attribute = '__attribute__((visibility("default"))) '
     else:
         attribute = ""
-    result = "{0}{1} {2}(".format(attribute, return_type, func_def.func_name)
+    if is_class:
+        if func_def.is_init:
+            assert len(class_name) > 0
+            func_name = class_name
+            return_type = ""
+        else:
+            func_name = func_def.base_name
+    else:
+        func_name = func_def.func_name
+    result = "{0} {1}(".format(attribute + return_type, func_name)
     if pretty_print:
         padding = ",\n" + len(result) * " "
+        if is_class:
+            padding += __INDENTATION
     else:
         padding = ", "
     args = []
     for idx, name in enumerate(func_def.arg_names):
-        if func_def.is_init and idx == 0:
+        if (is_class or func_def.is_init) and idx == 0:
             # class constructor don't need the first self
             continue
         t = func_def.arg_types[name]
@@ -350,15 +362,15 @@ def generate_c_header(func_def: Union[Function, DPIFunctionCall], pretty_print: 
                                     include_attribute=False) + ";"
 
 
-def generate_cxx_headers(func_defs):
+def generate_cxx_headers(func_defs, pretty_print: bool = True):
     headers = []
     for func_def in func_defs:
         if type(func_def) == type:
             funcs = get_dpi_functions(func_def)
             for f in funcs:
-                headers.append(generate_c_header(f))
+                headers.append(generate_c_header(f, pretty_print))
         else:
-            headers.append(generate_c_header(func_def))
+            headers.append(generate_c_header(func_def, pretty_print))
     result = "#include <iostream>\n"
     result += 'extern "C" {\n'
     result += "\n".join(headers)
@@ -381,14 +393,17 @@ def generate_sv_class(func_def, pretty_print: bool = True):
         result += __INDENTATION + sig + "\n"
         # generate the call
         args = [chandle_name] + func.func_def.arg_names[1:]
-        if func.func_def.base_name == "__init__":
+        if func.func_def.is_init:
             # don't need to first self
             args = args[1:]
         args = ", ".join(args)
-        if func.func_def.base_name == "__init__":
+        if func.func_def.is_init:
             var_assign = chandle_name + " = "
         else:
-            var_assign = ""
+            if func.func_def.return_type != DataType.Void:
+                var_assign = "return "
+            else:
+                var_assign = ""
         result += __INDENTATION * 2 + var_assign + func.func_def.func_name + "({0});\n".format(args)
         result += __INDENTATION + "endfunction\n"
 
@@ -427,6 +442,81 @@ def generate_sv_binding(func_defs: List[Union[type, DPIFunctionCall]], pkg_name=
     if filename is not None:
         with open(filename, "w+") as f:
             f.write(filename)
+
+    return result
+
+
+def generate_cxx_class(cls, pretty_print: bool = True):
+    result = ""
+    assert cls is not None
+    class_name = cls.__name__
+    result += "class {0} {{\n".format(class_name)
+
+    # a local pointer
+    pointer_name = "pysv_ptr"
+
+    result += "private:\n"
+    result += __INDENTATION + "void *{0};\n".format(pointer_name)
+
+    result += "public:\n"
+    # generating methods
+    func_defs = get_dpi_functions(cls)
+    for func in func_defs:
+        result += __INDENTATION + get_c_function_signature(func, pretty_print, include_attribute=False,
+                                                           is_class=True, class_name=class_name)
+        result += " {\n"
+        # call the wrapper function
+        func_name = func.func_def.func_name
+        # generate the call
+        args = [pointer_name] + func.func_def.arg_names[1:]
+        if func.func_def.is_init:
+            args = args[1:]
+        args = "{0}({1});".format(func_name, ", ".join(args))
+        tokens = []
+        if func.func_def.is_init:
+            tokens.append(pointer_name)
+            tokens.append("=")
+        elif func.func_def.return_type != DataType.Void:
+            tokens.append("return")
+        tokens.append(args)
+        result += __INDENTATION * 2 + " ".join(tokens) + "\n"
+        result += __INDENTATION + "}\n"
+
+    result += "};\n"
+    return result
+
+
+def generate_cxx_binding(func_defs: List[Union[type, DPIFunctionCall]], pretty_print: bool = True,
+                         filename=None):
+    if filename is not None:
+        header_name = os.path.basename(filename)
+        header_name = header_name.replace(".", "_").replace("-", "_")
+        header_name = header_name.upper()
+    else:
+        header_name = "PYSV_CXX_BINDING"
+
+    result = ""
+    # include guard
+    result += "#ifndef {0}\n".format(header_name)
+    result += "#define {0}\n".format(header_name)
+
+    # initialize the class if not done yet
+    __initialize_class_defs(func_defs)
+
+    # need to generate the C includes
+    result += generate_cxx_headers(func_defs, pretty_print)
+
+    # generate c++ classes
+    for func_def in func_defs:
+        if type(func_def) == type:
+            result += generate_cxx_class(func_def, pretty_print)
+
+    # end of include guard
+    result += "#endif // {0}\n".format(header_name)
+
+    if filename is not None:
+        with open(filename, "w+") as f:
+            f.write(result)
 
     return result
 

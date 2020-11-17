@@ -1,6 +1,6 @@
 from pysv import generate_dpi_signature, sv, DataType
 from pysv.codegen import (get_python_src, generate_cxx_function, generate_c_header, generate_pybind_code,
-                          generate_sv_binding)
+                          generate_sv_binding, generate_cxx_binding)
 # all the module imports in this file should be local to avoid breaking assertions
 
 
@@ -60,21 +60,31 @@ def test_generate_dpi_header(check_file):
     assert result == 'import "DPI-C" function int simple_func(input int a, input int b, input int c);'
 
 
+class SomeClass:
+    def __init__(self):
+        self.value = "hello world\n"
+
+    @sv(return_type=DataType.Void)
+    def print_a(self):
+        print(self.value)
+
+    @sv(return_type=DataType.Void)
+    def print_b(self, num):
+        print(self.value * num)
+
+    @sv()
+    def plus(self, num):
+        return num + 1
+
+
 def test_generate_sv_binding(check_file):
-    class SomeClass:
-        def __init__(self):
-            self.value = "hello world\n"
-
-        @sv(return_type=DataType.Void)
-        def print_a(self):
-            print(self.value)
-
-        @sv(return_type=DataType.Void)
-        def print_b(self, num):
-            print(self.value * num)
-
     result = generate_sv_binding([SomeClass])
     check_file(result, "test_generate_sv_binding.sv")
+
+
+def test_generate_cxx_binding(check_file):
+    result = generate_cxx_binding([SomeClass])
+    check_file(result, "test_generate_cxx_binding.cc")
 
 
 if __name__ == "__main__":
