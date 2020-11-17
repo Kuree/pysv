@@ -1,7 +1,7 @@
 `ifndef PYSV_PYSV
 `define PYSV_PYSV
 package pysv;
-import "DPI-C" function chandle SomeClass___init__();
+import "DPI-C" function chandle SomeClass_pysv_init();
 import "DPI-C" function void SomeClass_destroy(input chandle self);
 import "DPI-C" function int SomeClass_plus(input chandle self,
                                            input int num);
@@ -11,7 +11,7 @@ import "DPI-C" function void SomeClass_print_b(input chandle self,
 class SomeClass;
   local chandle pysv_ptr;
   function new();
-    pysv_ptr = SomeClass___init__();
+    pysv_ptr = SomeClass_pysv_init();
   endfunction
   function void destroy();
     SomeClass_destroy(pysv_ptr);

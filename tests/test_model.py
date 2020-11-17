@@ -34,7 +34,7 @@ def test_class_init():
     model_func = model_func.func_def
     assert len(model_func.imports) >= 1
     assert model_func.imports["sys"] == "sys"
-    assert model_func.func_name == "TestModel___init__"
+    assert model_func.func_name == "TestModel_" + sv.init_function_name()
 
 
 def test_get_dpi_func():

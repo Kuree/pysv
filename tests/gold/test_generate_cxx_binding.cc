@@ -2,7 +2,7 @@
 #define PYSV_CXX_BINDING
 #include <iostream>
 extern "C" {
-void* SomeClass___init__();
+void* SomeClass_pysv_init();
 void SomeClass_destroy(void* self);
 int32_t SomeClass_plus(void* self,
                        int32_t num);
@@ -15,7 +15,7 @@ private:
   void *pysv_ptr;
 public:
    SomeClass() {
-    pysv_ptr = SomeClass___init__();
+    pysv_ptr = SomeClass_pysv_init();
   }
   void destroy() {
     SomeClass_destroy(pysv_ptr);

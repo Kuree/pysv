@@ -4,14 +4,13 @@ from .types import DataType
 
 
 def get_dpi_functions(cls: type):
-    attrs = [(a, getattr(cls, a)) for a in dir(cls)]
+    attrs = [getattr(cls, a) for a in dir(cls)]
     result = []
-    for attr_name, attr in attrs:
+    for attr in attrs:
         if isinstance(attr, DPIFunctionCall):
             result.append(attr)
             # set init as well
-            if attr_name == "__init__":
-                attr.func_def.is_init = True
+            if attr == cls.__init__:
                 # return type is c_handle
                 attr.func_def.return_type = DataType.CHandle
             else:

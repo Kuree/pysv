@@ -73,7 +73,13 @@ class DPIFunction(Function):
                 self.arg_types[name] = DataType.Int
             # arg ordering
             self.arg_names.append(name)
-        self.__func_name = fn.__name__
+        if fn.__name__ == "__init__":
+            # Verilator doesn't like double underscore
+            # need to rename it
+            self.__func_name = self.init_function_name()
+            self.is_init = True
+        else:
+            self.__func_name = fn.__name__
 
         return DPIFunctionCall(self)
 
@@ -97,6 +103,10 @@ class DPIFunction(Function):
     @property
     def base_name(self):
         return self.__func_name
+
+    @staticmethod
+    def init_function_name():
+        return "pysv_init"
 
 
 # aliasing
