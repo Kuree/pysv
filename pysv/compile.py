@@ -1,4 +1,4 @@
-from .codegen import generate_pybind_code, generate_cxx_headers
+from .codegen import generate_pybind_code, generate_c_headers
 import subprocess
 import os
 import shutil
@@ -77,7 +77,7 @@ def __get_cxx_compiler():   # pragma: no cover
 
 def compile_and_run(lib_path, cxx_content, cwd, func_defs, extra_headers=""):
     """Used for testing or simple C++ code. Returns captured stdout"""
-    headers = generate_cxx_headers(func_defs)
+    headers = generate_c_headers(func_defs)
     headers += "\n" + extra_headers + "\n"
     # write out the file
     filename = os.path.join(cwd, "test_cxx.cc")

@@ -143,7 +143,7 @@ def get_python_src(func_def: Union[Function, DPIFunctionCall]):
     return result
 
 
-def get_c_type_str(data_type: DataType):    # pragma: no cover
+def get_c_type_str(data_type: DataType):  # pragma: no cover
     if data_type == DataType.Bit:
         return "bool"
     elif data_type == DataType.Bit:
@@ -173,7 +173,7 @@ def get_c_type_str(data_type: DataType):    # pragma: no cover
 
 
 def get_c_function_signature(func_def: Union[Function, DPIFunctionCall], pretty_print=True, include_attribute=True,
-                             is_class=False, class_name=""):
+                             is_class=False, class_name="", split_return_type: bool = False):
     func_def = __get_func_def(func_def)
     return_type = get_c_type_str(func_def.return_type)
     if include_attribute:
@@ -189,7 +189,12 @@ def get_c_function_signature(func_def: Union[Function, DPIFunctionCall], pretty_
             func_name = func_def.base_name
     else:
         func_name = func_def.func_name
-    result = "{0} {1}(".format(attribute + return_type, func_name)
+
+    return_type = attribute + return_type
+    if len(return_type) > 0:
+        result = "{0} {1}(".format(return_type, func_name)
+    else:
+        result = func_name + "("
     if pretty_print:
         padding = ",\n" + len(result) * " "
         if is_class:
@@ -206,7 +211,10 @@ def get_c_function_signature(func_def: Union[Function, DPIFunctionCall], pretty_
         args.append("{0} {1}".format(t_str, name))
     arg_str = padding.join(args)
     result = "{0}{1})".format(result, arg_str)
-    return result
+    if split_return_type:
+        return return_type, result
+    else:
+        return result
 
 
 def generate_sys_path_check():
@@ -341,7 +349,8 @@ def generate_bootstrap_code(pretty_print=True, add_sys_path=True, add_class=True
     return result
 
 
-def generate_pybind_code(func_defs: List[Union[type, DPIFunctionCall]], pretty_print: bool = True):
+def generate_pybind_code(func_defs: List[Union[type, DPIFunctionCall]], pretty_print: bool = True,
+                         namespace: str = "pysv"):
     add_class = should_add_class(func_defs)
     add_sys_path = should_add_class(func_defs)
     result = generate_bootstrap_code(pretty_print, add_sys_path=add_sys_path, add_class=add_class) + "\n"
@@ -355,6 +364,11 @@ def generate_pybind_code(func_defs: List[Union[type, DPIFunctionCall]], pretty_p
         code_blocks.append(generate_cxx_function(func_def, pretty_print=pretty_print, add_sys_path=add_sys_path))
     result += "\n".join(code_blocks)
     result += "}\n"
+
+    # notice that if there is classes involved, we also need to generate the class implementation
+    if add_class:
+        result += generate_cxx_binding(func_defs, pretty_print=pretty_print, include_implementation=True)
+
     return result
 
 
@@ -363,7 +377,7 @@ def generate_c_header(func_def: Union[Function, DPIFunctionCall], pretty_print: 
                                     include_attribute=False) + ";"
 
 
-def generate_cxx_headers(func_defs, pretty_print: bool = True):
+def generate_c_headers(func_defs, pretty_print: bool = True):
     headers = []
     for func_def in func_defs:
         if type(func_def) == type:
@@ -447,7 +461,7 @@ def generate_sv_binding(func_defs: List[Union[type, DPIFunctionCall]], pkg_name=
     return result
 
 
-def generate_cxx_class(cls, pretty_print: bool = True):
+def generate_cxx_class(cls, pretty_print: bool = True, include_implementation: bool = False):
     result = ""
     assert cls is not None
     class_name = cls.__name__
@@ -464,31 +478,38 @@ def generate_cxx_class(cls, pretty_print: bool = True):
     func_defs = get_dpi_functions(cls)
     for func in func_defs:
         result += __INDENTATION + get_c_function_signature(func, pretty_print, include_attribute=False,
-                                                           is_class=True, class_name=class_name)
-        result += " {\n"
-        # call the wrapper function
-        func_name = func.func_def.func_name
-        # generate the call
-        args = [pointer_name] + func.func_def.arg_names[1:]
-        if func.func_def.is_init:
-            args = args[1:]
-        args = "{0}({1});".format(func_name, ", ".join(args))
-        tokens = []
-        if func.func_def.is_init:
-            tokens.append(pointer_name)
-            tokens.append("=")
-        elif func.func_def.return_type != DataType.Void:
-            tokens.append("return")
-        tokens.append(args)
-        result += __INDENTATION * 2 + " ".join(tokens) + "\n"
-        result += __INDENTATION + "}\n"
+                                                           is_class=True, class_name=class_name) + ";\n"
 
     result += "};\n"
+
+    if include_implementation:
+        for func in func_defs:
+            return_type, sig = get_c_function_signature(func, pretty_print, include_attribute=False, is_class=True,
+                                                        class_name=class_name, split_return_type=True)
+            result += "{0} {1}::{2}".format(return_type, class_name, sig)
+            result += " {\n"
+            # call the wrapper function
+            func_name = func.func_def.func_name
+            # generate the call
+            args = [pointer_name] + func.func_def.arg_names[1:]
+            if func.func_def.is_init:
+                args = args[1:]
+            args = "{0}({1});".format(func_name, ", ".join(args))
+            tokens = []
+            if func.func_def.is_init:
+                tokens.append(pointer_name)
+                tokens.append("=")
+            elif func.func_def.return_type != DataType.Void:
+                tokens.append("return")
+            tokens.append(args)
+            result += __INDENTATION * 2 + " ".join(tokens) + "\n"
+            result += __INDENTATION + "}\n"
+
     return result
 
 
 def generate_cxx_binding(func_defs: List[Union[type, DPIFunctionCall]], pretty_print: bool = True,
-                         filename=None):
+                         filename=None, include_implementation: bool = False):
     if filename is not None:
         header_name = os.path.basename(filename)
         header_name = header_name.replace(".", "_").replace("-", "_")
@@ -505,12 +526,12 @@ def generate_cxx_binding(func_defs: List[Union[type, DPIFunctionCall]], pretty_p
     __initialize_class_defs(func_defs)
 
     # need to generate the C includes
-    result += generate_cxx_headers(func_defs, pretty_print)
+    result += generate_c_headers(func_defs, pretty_print)
 
     # generate c++ classes
     for func_def in func_defs:
         if type(func_def) == type:
-            result += generate_cxx_class(func_def, pretty_print)
+            result += generate_cxx_class(func_def, pretty_print, include_implementation)
 
     # end of include guard
     result += "#endif // {0}\n".format(header_name)
@@ -520,4 +541,3 @@ def generate_cxx_binding(func_defs: List[Union[type, DPIFunctionCall]], pretty_p
             f.write(result)
 
     return result
-
