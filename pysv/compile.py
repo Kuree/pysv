@@ -8,6 +8,10 @@ import platform
 def compile_lib(func_defs, cwd, lib_name="pysv", pretty_print=True, release_build=False, clean_up_build=False):
     if not os.path.isdir(cwd):
         os.makedirs(cwd, exist_ok=True)
+    # notice that fo follow the "lib" + name convention so the linker can find the library easily
+    if len(lib_name) < 3 or lib_name[:3] != "lib":
+        lib_name = "lib" + lib_name
+
     # need to copy stuff over
     root_dir = os.path.dirname(__file__)
     pybind_path = os.path.join(root_dir, "extern", "pybind11")
