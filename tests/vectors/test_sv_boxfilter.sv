@@ -17,6 +17,7 @@ always #10 clk = ~clk;
 
 task reset();
     rst = 0;
+    in = 0;
     #1;
     rst = 1;
     #1;
@@ -29,10 +30,11 @@ initial begin
     model = new(FILTER_SIZE);
 
     for (int i = 0; i < 10; i++) begin
-        @(posedge clk);
-        in = 10;
+        @(clk);
+        in = $urandom() % 'hFFFF;
         assert (out == model.avg()) else $error("expect %d, got %d", model.avg(), out);
         model.push(in);
+        @(clk);
     end
 
     $finish();
