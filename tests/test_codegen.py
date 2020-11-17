@@ -1,6 +1,6 @@
-from pysv import generate_dpi_signature, sv, DataType
+from pysv import sv, DataType
 from pysv.codegen import (get_python_src, generate_cxx_function, generate_c_header, generate_pybind_code,
-                          generate_sv_binding, generate_cxx_binding)
+                          generate_sv_binding, generate_cxx_binding, generate_dpi_signature)
 # all the module imports in this file should be local to avoid breaking assertions
 
 

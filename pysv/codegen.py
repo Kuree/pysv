@@ -478,7 +478,7 @@ def generate_cxx_class(cls, pretty_print: bool = True, include_implementation: b
     # generating methods
     func_defs = get_dpi_functions(cls)
     for func in func_defs:
-        result += __INDENTATION + get_c_function_signature(func, pretty_print, include_attribute=False,
+        result += __INDENTATION + get_c_function_signature(func, pretty_print, include_attribute=include_implementation,
                                                            is_class=True, class_name=class_name) + ";\n"
 
     result += "};\n"
@@ -527,7 +527,8 @@ def generate_cxx_binding(func_defs: List[Union[type, DPIFunctionCall]], pretty_p
     __initialize_class_defs(func_defs)
 
     # need to generate the C includes
-    result += generate_c_headers(func_defs, pretty_print)
+    if not include_implementation:
+        result += generate_c_headers(func_defs, pretty_print)
 
     # need to output namespace
     result += "namespace {0} {{\n".format(namespace)

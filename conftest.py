@@ -5,8 +5,16 @@ import filecmp
 import difflib
 
 
+def get_tests_dir():
+    return os.path.join(os.path.dirname(__file__), "tests")
+
+
 def get_gold_dir():
-    return os.path.join(os.path.dirname(__file__), "tests", "gold")
+    return os.path.join(get_tests_dir(), "gold")
+
+
+def get_vectors_dir():
+    return os.path.join(get_tests_dir(), "vectors")
 
 
 def check_file_fn(src_str: str, vector_filename: str):
@@ -31,3 +39,14 @@ def check_file_fn(src_str: str, vector_filename: str):
 @pytest.fixture
 def check_file():
     return check_file_fn
+
+
+def get_vector_filename_fn(filename):
+    filename = os.path.join(get_vectors_dir(), filename)
+    assert os.path.isfile(filename)
+    return filename
+
+
+@pytest.fixture
+def get_vector_filename():
+    return get_vector_filename_fn

@@ -1,4 +1,8 @@
 import sys
+import shutil
+import subprocess
+import os
+import abc
 
 
 def should_add_class(func_defs):
@@ -23,3 +27,129 @@ def should_add_sys_path(func_defs):
             if module_name not in built_in_modules:
                 return True
     return False
+
+
+def is_xcelium_available():
+    return shutil.which("xrun") is not None
+
+
+def is_vcs_available():
+    return shutil.which("vcs") is not None
+
+
+def is_verilator_available():
+    return shutil.which("verilator") is not None
+
+
+# simple CAD tool runners
+class Tester:
+    def __init__(self, lib_path, *files: str, cwd=None, clean_up_run=False):
+        self.lib_path = lib_path
+        self.files = []
+        for file in files:
+            self.files.append(os.path.abspath(file))
+        self.cwd = self._process_cwd(cwd)
+        self.clean_up_run = clean_up_run
+        self.__process = []
+
+    @abc.abstractmethod
+    def run(self, blocking=False):
+        pass
+
+    def _process_cwd(self, cwd):
+        if cwd is None:
+            cwd = "build"
+        if not os.path.isdir(cwd):
+            os.makedirs(cwd, exist_ok=True)
+        # copy files over
+        files = []
+        for file in self.files:
+            new_filename = os.path.abspath(os.path.join(cwd, os.path.basename(file)))
+            if new_filename != file:
+                if os.path.isfile(new_filename):
+                    os.remove(new_filename)
+                shutil.copyfile(file, new_filename)
+            ext = os.path.splitext(new_filename)[-1]
+            if ext != ".h" and ext != ".hh":
+                files.append(new_filename)
+        self.files = files
+        return cwd
+
+    def _set_lib_env(self):
+        env = os.environ.copy()
+        env["LD_LIBRARY_PATH"] = os.path.dirname(os.path.abspath(self.lib_path))
+        print(env["LD_LIBRARY_PATH"])
+        return env
+
+    def _run(self, args, cwd, env, blocking):
+        if blocking:
+            subprocess.check_call(args, cwd=cwd, env=env)
+        else:
+            p = subprocess.Popen(args, cwd=cwd, env=env)
+            self.__process.append(p)
+
+    def clean_up(self):
+        if self.clean_up_run and os.path.exists(self.cwd) and os.path.isdir(
+                self.cwd):
+            shutil.rmtree(self.cwd)
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.clean_up()
+        for p in self.__process:
+            p.kill()
+
+    def __enter__(self):
+        return self
+
+
+class VerilatorTester(Tester):
+    def __init__(self, lib_path, *files: str, cwd=None, clean_up_run=False):
+        super().__init__(lib_path, *files, cwd=cwd, clean_up_run=clean_up_run)
+
+    def run(self, blocking=True):
+        # compile it first
+        verilator = shutil.which("verilator")
+        args = [verilator, "--cc", "--exe"]
+        args += self.files + [os.path.abspath(self.lib_path), "-Wno-fatal"]
+        subprocess.check_call(args, cwd=self.cwd)
+        # symbolic link it first
+        env = self._set_lib_env()
+
+        # find the shortest file
+        mk_files = []
+        for file in os.listdir(os.path.join(self.cwd, "obj_dir")):
+            if file.endswith(".mk"):
+                mk_files.append(file)
+        mk_files.sort(key=lambda x: len(x))
+        assert len(mk_files) > 0, "Unable to find any makefile from Verilator"
+        mk_file = mk_files[0]
+        # make the file
+        subprocess.check_call(["make", "-C", "obj_dir", "-f", mk_file],
+                              cwd=self.cwd, env=env)
+        # run the application
+        name = os.path.join("obj_dir", mk_file.replace(".mk", ""))
+        print("Running " + name)
+        self._run([name], self.cwd, env, blocking)
+
+
+class CadenceTester(Tester):
+    def __init__(self, lib_path, *files: str, cwd=None, clean_up_run=False):
+        super().__init__(lib_path, *files, cwd=cwd, clean_up_run=clean_up_run)
+        self.toolchain = ""
+
+    def run(self, blocking=True):
+        assert len(self.toolchain) > 0
+        env = self._set_lib_env(self.cwd)
+        # run it
+        args = [self.toolchain] + list(self.files) + self.__get_flag()
+        print("Running", self.toolchain)
+        self._run(args, self.cwd, env, blocking)
+
+    def __get_flag(self):
+        return ["-sv_lib", self.lib_path]
+
+
+class XceliumTester(CadenceTester):
+    def __init__(self, lib_path, *files: str, cwd=None, clean_up_run=False):
+        super().__init__(lib_path, *files, cwd=cwd, clean_up_run=clean_up_run)
+        self.toolchain = "xrun"
