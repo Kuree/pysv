@@ -26,6 +26,12 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Display Python version 🐍
       run: python -c "import sys; print(sys.version)"
+    - name: Install Verilator 📁
+      if: matrix.os == 'ubuntu-latest'
+      run: sudo apt-get install verilator
+    - name: Install Verilator 📁
+      if: matrix.os == 'macOS-latest'
+      run: brew install verilator
     - name: Install deps 🛠️
       shell: bash
       run: |
