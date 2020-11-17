@@ -10,6 +10,7 @@ void SomeClass_print_a(void* self);
 void SomeClass_print_b(void* self,
                        int32_t num);
 }
+namespace pysv {
 class SomeClass {
 private:
   void *pysv_ptr;
@@ -20,4 +21,5 @@ public:
   void print_a();
   void print_b(int32_t num);
 };
+}
 #endif // PYSV_CXX_BINDING

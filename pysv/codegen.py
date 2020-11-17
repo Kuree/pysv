@@ -191,7 +191,7 @@ def get_c_function_signature(func_def: Union[Function, DPIFunctionCall], pretty_
         func_name = func_def.func_name
 
     return_type = attribute + return_type
-    if len(return_type) > 0:
+    if len(return_type) > 0 and not split_return_type:
         result = "{0} {1}(".format(return_type, func_name)
     else:
         result = func_name + "("
@@ -367,7 +367,8 @@ def generate_pybind_code(func_defs: List[Union[type, DPIFunctionCall]], pretty_p
 
     # notice that if there is classes involved, we also need to generate the class implementation
     if add_class:
-        result += generate_cxx_binding(func_defs, pretty_print=pretty_print, include_implementation=True)
+        result += generate_cxx_binding(func_defs, pretty_print=pretty_print, include_implementation=True,
+                                       namespace=namespace)
 
     return result
 
@@ -509,7 +510,7 @@ def generate_cxx_class(cls, pretty_print: bool = True, include_implementation: b
 
 
 def generate_cxx_binding(func_defs: List[Union[type, DPIFunctionCall]], pretty_print: bool = True,
-                         filename=None, include_implementation: bool = False):
+                         filename=None, include_implementation: bool = False, namespace: str = "pysv"):
     if filename is not None:
         header_name = os.path.basename(filename)
         header_name = header_name.replace(".", "_").replace("-", "_")
@@ -528,10 +529,16 @@ def generate_cxx_binding(func_defs: List[Union[type, DPIFunctionCall]], pretty_p
     # need to generate the C includes
     result += generate_c_headers(func_defs, pretty_print)
 
+    # need to output namespace
+    result += "namespace {0} {{\n".format(namespace)
+
     # generate c++ classes
     for func_def in func_defs:
         if type(func_def) == type:
             result += generate_cxx_class(func_def, pretty_print, include_implementation)
+
+    # end of namespace
+    result += "}\n"
 
     # end of include guard
     result += "#endif // {0}\n".format(header_name)
