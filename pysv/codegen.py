@@ -12,6 +12,7 @@ __PY_OBJ_MAP_NAME = "py_obj_map"
 __SYS_PATH_NAME = "SYS_PATH"
 __SYS_PATH_FUNC_NAME = "check_sys_path"
 __PYTHON_LIBRARY = "PYTHON_LIBRARY"
+__IMPORT_MODULE = "import_module"
 
 
 def __get_code_snippet(name):
@@ -117,6 +118,20 @@ def __initialize_class_defs(func_defs):
             check_class_ctor(func)
             inject_destructor(func)
             check_class_method(func)
+
+
+def __has_imports(func_defs):
+    for func in func_defs:
+        if type(func) == type:
+            fs = get_dpi_functions(func)
+            f: DPIFunctionCall
+            for f in fs:
+                if len(f.func_def.imports) > 0:
+                    return True
+        else:
+            if len(func.func_def.imports) > 0:
+                return True
+    return False
 
 
 def get_python_src(func_def: Union[Function, DPIFunctionCall]):
@@ -246,13 +261,12 @@ def generate_local_variables(func_def: Union[Function, DPIFunctionCall]):
 def generate_global_variables(func_def: Union[Function, DPIFunctionCall]):
     func_def = __get_func_def(func_def)
     imports = func_def.imports
-    # maybe there is a performance issue?
-    # some modules may take some time to import.
-    # if that is the case, maybe cache the imports somewhere?
-    result = __INDENTATION + "auto globals = py::dict();\n"
-    for n, m in imports.items():
-        result += __INDENTATION + 'globals["{0}"] = py::module::import("{1}");;\n'.format(n, m)
-    result += "\n"
+    result = ""
+    if len(imports) > 0:
+        result = __INDENTATION + "auto globals = py::dict();\n"
+        for n, m in imports.items():
+            result += __INDENTATION + '{0}("{1}", "{2}", globals);\n'.format(__IMPORT_MODULE, m, n)
+        result += "\n"
     return result
 
 
@@ -331,7 +345,7 @@ def generate_sys_path_values(pretty_print=True):
     return result
 
 
-def generate_bootstrap_code(pretty_print=True, add_sys_path=True, add_class=True):
+def generate_bootstrap_code(pretty_print=True, add_sys_path=True, add_class=True, add_imports=True):
     result = __get_code_snippet("include_header.hh")
 
     result += "namespace py = pybind11;\n"
@@ -348,6 +362,8 @@ def generate_bootstrap_code(pretty_print=True, add_sys_path=True, add_class=True
     if add_class:
         result += __get_code_snippet("call_class_func.cc")
         result += __get_code_snippet("create_class_func.cc")
+    if add_imports:
+        result += __get_code_snippet("import_global.cc")
 
     return result
 
@@ -357,7 +373,9 @@ def generate_pybind_code(func_defs: List[Union[type, DPIFunctionCall]], pretty_p
     add_class = should_add_class(func_defs)
     if not add_sys_path:
         add_sys_path = should_add_class(func_defs)
-    result = generate_bootstrap_code(pretty_print, add_sys_path=add_sys_path, add_class=add_class) + "\n"
+    add_imports = __has_imports(func_defs)
+    result = generate_bootstrap_code(pretty_print, add_sys_path=add_sys_path, add_class=add_class,
+                                     add_imports=add_imports) + "\n"
     # generate extern C block
     result += 'extern "C" {\n'
     code_blocks = []

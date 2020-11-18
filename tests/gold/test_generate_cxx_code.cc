@@ -17,8 +17,6 @@ extern "C" {
 __attribute__((visibility("default"))) int32_t simple_func(int32_t a,
                                                            int32_t b,
                                                            int32_t c) {
-  auto globals = py::dict();
-
   auto locals = py::dict();
   locals["__a"] = a;
   locals["__b"] = b;
