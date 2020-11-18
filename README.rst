@@ -24,8 +24,9 @@ Supported Simulators
 Theoretically any simulator that supports SystemVerilog DPI semantics
 should work. Here is a list of simulators that have been tested:
 
--  Xcelium/Incisive
--  vcs
+-  Cadence® Xcelium™
+-  Synopsys VCS®
+-  Mentor Questa®
 -  Verilator
 
 Dependencies
