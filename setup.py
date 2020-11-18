@@ -1,16 +1,18 @@
 from setuptools import setup
+import os
 
-desc = \
-    """
-pysv is a library that allow SV test generators work with Python functional models natively
-    """
+
+current_directory = os.path.abspath(os.path.dirname(__file__))
+with open(os.path.join(current_directory, 'README.rst')) as f:
+    long_description = f.read()
 
 setup(
     name='pysv',
     version='0.0.1',
     author='Keyi Zhang',
     author_email='keyi@cs.stanford.edu',
-    description=desc,
+    long_description=long_description,
+    long_description_content_type='text/x-rst',
     packages=['pysv'],
     url="https://github.com/Kuree/pysv",
     install_requires=[
