@@ -39,14 +39,18 @@ def test_verilator(get_vector_filename):
         tester.run()
 
 
-@pytest.mark.parametrize("simulator", ("xcelium", "vcs"))
+simulator_map = {
+    "vcs": (pysv.util.is_vcs_available, pysv.util.VCSTester),
+    "xcelium": (pysv.util.is_xcelium_available, pysv.util.XceliumTester),
+    "questa": (pysv.util.is_questa_available, pysv.util.QuestaTester)
+}
+
+
+@pytest.mark.parametrize("simulator", ("xcelium", "vcs", "questa"))
 def test_sv_simulator(get_vector_filename, simulator):
-    if simulator == "xcelium":
-        if not pysv.util.is_xcelium_available():
-            pytest.skip("Xcelium not available")
-    elif simulator == "vcs":
-        if not pysv.util.is_vcs_available():
-            pytest.skip("vcs not available")
+    avail, tester_cls = simulator_map[simulator]
+    if not avail():
+        pytest.skip("{0} not available".format(simulator))
     with tempfile.TemporaryDirectory() as temp:
         lib_path = compile_lib([BoxFilter], cwd=temp)
         sv_pkg = os.path.join(os.path.abspath(temp), "pysv_pkg.sv")
@@ -54,12 +58,7 @@ def test_sv_simulator(get_vector_filename, simulator):
         sv_file = get_vector_filename("box_filter.sv")
         tb_file = get_vector_filename("test_sv_boxfilter.sv")
 
-        if simulator == "vcs":
-            tester_cls = pysv.util.VCSTester
-        else:
-            tester_cls = pysv.util.XceliumTester
         tester = tester_cls(lib_path, sv_pkg, sv_file, tb_file, cwd=temp)
-
         tester.run()
 
 
