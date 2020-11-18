@@ -14,9 +14,26 @@ class __HasDPIVisitor(ast.NodeVisitor):
         self.generic_visit(node)
 
 
+class __HasReturnVisitor(ast.NodeVisitor):
+    def __init__(self):
+        self.result = False
+
+    def visit_Return(self, node: ast.Return):
+        self.result = True
+
+
 def has_sv_deco(node):
     visitor = __HasDPIVisitor()
     visitor.visit(node)
+    return visitor.result
+
+
+def has_return(func: type):
+    fn_src = inspect.getsource(func)
+    func_tree = ast.parse(textwrap.dedent(fn_src))
+    fn_body = func_tree.body[0]
+    visitor = __HasReturnVisitor()
+    visitor.visit(fn_body)
     return visitor.result
 
 

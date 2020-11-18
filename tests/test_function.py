@@ -16,7 +16,7 @@ def test_frame_import():
 def test_width():
     @sv()
     def func1():
-        pass
+        return 1
 
     @sv(DataType.Bit)
     def func2():
@@ -74,5 +74,14 @@ def test_run_function():
     set_run_function(True)
 
 
+def test_auto_set_return():
+    @sv()
+    def foo():
+        a = 1
+
+    func_call = foo
+    assert func_call.func_def.return_type == DataType.Void
+
+
 if __name__ == "__main__":
-    test_run_function()
+    test_auto_set_return()

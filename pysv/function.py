@@ -3,7 +3,7 @@ import abc
 from typing import Dict, List, Union, Callable
 from .types import DataType
 from .frame import _inspect_frame
-from .pyast import get_function_src, get_class_src
+from .pyast import get_function_src, get_class_src, has_return
 
 
 # by default we will not run the function that's wrapped in
@@ -80,6 +80,10 @@ class DPIFunction(Function):
             self.is_init = True
         else:
             self.__func_name = fn.__name__
+
+        # detect return
+        if self.return_type == DataType.Int and not has_return(fn):
+            self.return_type = DataType.Void
 
         return DPIFunctionCall(self)
 

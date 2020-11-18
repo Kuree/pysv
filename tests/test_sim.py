@@ -12,7 +12,7 @@ class BoxFilter:
         self.__values = [0 for _ in range(filter_size)]
         self.__ptr = 0
 
-    @sv(value=DataType.UInt, return_type=DataType.Void)
+    @sv(value=DataType.UInt)
     def push(self, value):
         self.__values[self.__ptr] = value
         self.__ptr = (self.__ptr + 1) % len(self.__values)
