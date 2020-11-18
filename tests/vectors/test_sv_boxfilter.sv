@@ -30,10 +30,11 @@ initial begin
     model = new(FILTER_SIZE);
 
     for (int i = 0; i < 10; i++) begin
-        assert (out == model.avg()) else $error("expect %d, got %d", model.avg(), out);
         in = $urandom() % 'hFFFF;
         model.push(in);
+        @(posedge clk);
         @(negedge clk);
+        assert (out == model.avg()) else $error("expect %d, got %d", model.avg(), out);
     end
 
     $finish();
