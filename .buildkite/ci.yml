@@ -1,5 +1,5 @@
 steps:
-- label: ":wrench: Build  and Test Garnet Unit Test"
+- label: ":wrench: Test pysv with EDA tools"
   commands:
   - source /cad/modules/tcl/init/sh
   - module load base
