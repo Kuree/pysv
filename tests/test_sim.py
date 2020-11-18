@@ -52,8 +52,6 @@ def test_sv_simulator(get_vector_filename, simulator):
     avail, tester_cls = simulator_map[simulator]
     if not avail():
         pytest.skip("{0} not available".format(simulator))
-    if simulator == "vivado" and __name__ != "__main__":
-        pytest.skip("For some reason vivado doesn't work in CI. skipping it for now")
     with tempfile.TemporaryDirectory() as temp:
         lib_path = compile_lib([BoxFilter], cwd=temp)
         sv_pkg = os.path.join(os.path.abspath(temp), "pysv_pkg.sv")
