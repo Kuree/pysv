@@ -182,12 +182,17 @@ def get_c_function_signature(func_def: Union[Function, DPIFunctionCall], pretty_
     else:
         attribute = ""
     if is_class:
+        assert len(class_name) > 0
         if func_def.is_init:
-            assert len(class_name) > 0
             func_name = class_name
             return_type = ""
         else:
-            func_name = func_def.base_name
+            # special case for destructor
+            if func_def.base_name == "destroy":
+                func_name = "~" + class_name
+                return_type = ""
+            else:
+                func_name = func_def.base_name
     else:
         func_name = func_def.func_name
 
@@ -486,7 +491,10 @@ def generate_cxx_class(cls, pretty_print: bool = True, include_implementation: b
         for func in func_defs:
             return_type, sig = get_c_function_signature(func, pretty_print, include_attribute=False, is_class=True,
                                                         class_name=class_name, split_return_type=True)
-            result += "{0} {1}::{2}".format(return_type, class_name, sig)
+            if len(return_type) > 0:
+                result += "{0} {1}::{2}".format(return_type, class_name, sig)
+            else:
+                result += "{0}::{1}".format(class_name, sig)
             result += " {\n"
             # call the wrapper function
             func_name = func.func_def.func_name

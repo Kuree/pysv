@@ -16,7 +16,7 @@ private:
   void *pysv_ptr;
 public:
   SomeClass();
-  void destroy();
+  ~SomeClass();
   int32_t plus(int32_t num);
   void print_a();
   void print_b(int32_t num);
