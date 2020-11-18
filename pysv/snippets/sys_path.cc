@@ -1,4 +1,4 @@
-void check_sys_path() {
+void check_sys_path(const char *python_lib) {
     // only modify the sys.path if the one is . (set by pybind)
     auto sys = py::module::import("sys");
     auto sys_path = sys.attr("path");
@@ -10,5 +10,9 @@ void check_sys_path() {
         for (auto const path: SYS_PATH) {
             sys.attr("path").attr("append")(py::str(path));
         }
+        // also load it into the global table if it's on linux. only needed for ModelSim/Questa
+        #ifdef __linux__
+        dlopen(python_lib, RTLD_LAZY | RTLD_GLOBAL);
+        #endif
     }
 }

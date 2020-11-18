@@ -11,6 +11,7 @@ __GLOBAL_STRING_VAR_NAME = "string_result_value"
 __PY_OBJ_MAP_NAME = "py_obj_map"
 __SYS_PATH_NAME = "SYS_PATH"
 __SYS_PATH_FUNC_NAME = "check_sys_path"
+__PYTHON_LIBRARY = "PYTHON_LIBRARY"
 
 
 def __get_code_snippet(name):
@@ -218,7 +219,8 @@ def get_c_function_signature(func_def: Union[Function, DPIFunctionCall], pretty_
 
 
 def generate_sys_path_check():
-    return __INDENTATION + __SYS_PATH_FUNC_NAME + "();\n"
+    # need to figure out the python lib users are currently using
+    return __INDENTATION + __SYS_PATH_FUNC_NAME + '({0});\n'.format(__PYTHON_LIBRARY)
 
 
 def generate_local_variables(func_def: Union[Function, DPIFunctionCall]):
@@ -325,14 +327,7 @@ def generate_sys_path_values(pretty_print=True):
 
 
 def generate_bootstrap_code(pretty_print=True, add_sys_path=True, add_class=True):
-    includes = ['"pybind11/include/pybind11/embed.h"',
-                '"pybind11/include/pybind11/eval.h"']
-    if add_class:
-        includes += ['<iostream>',
-                     '<unordered_map>']
-    result = ""
-    for file in includes:
-        result += '#include {0}\n'.format(file)
+    result = __get_code_snippet("include_header.hh")
 
     result += "namespace py = pybind11;\n"
     result += "py::scoped_interpreter guard;\n"

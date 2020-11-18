@@ -13,7 +13,7 @@ box_filter #(FILTER_SIZE) dut (.*);
 BoxFilter model;
 
 initial clk = 0;
-always #10 clk = ~clk;
+always #10 clk <= ~clk;
 
 task reset();
     rst = 0;
@@ -30,11 +30,10 @@ initial begin
     model = new(FILTER_SIZE);
 
     for (int i = 0; i < 10; i++) begin
-        @(clk);
-        in = $urandom() % 'hFFFF;
         assert (out == model.avg()) else $error("expect %d, got %d", model.avg(), out);
+        in = $urandom() % 'hFFFF;
         model.push(in);
-        @(clk);
+        @(negedge clk);
     end
 
     $finish();
