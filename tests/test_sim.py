@@ -42,11 +42,12 @@ def test_verilator(get_vector_filename):
 simulator_map = {
     "vcs": (pysv.util.is_vcs_available, pysv.util.VCSTester),
     "xcelium": (pysv.util.is_xcelium_available, pysv.util.XceliumTester),
-    "questa": (pysv.util.is_questa_available, pysv.util.QuestaTester)
+    "questa": (pysv.util.is_questa_available, pysv.util.QuestaTester),
+    "vivado": (pysv.util.is_vivado_available, pysv.util.VivadoTester)
 }
 
 
-@pytest.mark.parametrize("simulator", ("xcelium", "vcs", "questa"))
+@pytest.mark.parametrize("simulator", ("xcelium", "vcs", "questa", "vivado"))
 def test_sv_simulator(get_vector_filename, simulator):
     avail, tester_cls = simulator_map[simulator]
     if not avail():

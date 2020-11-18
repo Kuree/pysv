@@ -41,6 +41,10 @@ def is_questa_available():
     return shutil.which("vlog")
 
 
+def is_vivado_available():
+    return shutil.which("xsim")
+
+
 def is_verilator_available():
     return shutil.which("verilator") is not None
 
@@ -82,7 +86,6 @@ class Tester:
     def _set_lib_env(self):
         env = os.environ.copy()
         env["LD_LIBRARY_PATH"] = os.path.dirname(os.path.abspath(self.lib_path))
-        print(env["LD_LIBRARY_PATH"])
         return env
 
     def _run(self, args, cwd, env, blocking):
@@ -192,3 +195,20 @@ class QuestaTester(Tester):
     def __get_flag(self):
         name = os.path.splitext(self.lib_path)[0]
         return ["-sv_lib", name, "-batch", "-do",  "run -all; exit"]
+
+
+class VivadoTester(Tester):
+    def __init__(self, lib_path, *files: str, cwd=None, top_name="top", clean_up_run=False):
+        super().__init__(lib_path, *files, cwd=cwd, clean_up_run=clean_up_run)
+        self.top_name = top_name
+        self.lib_path = os.path.relpath(self.lib_path, cwd)
+
+    def run(self, blocking=True):
+        env = self._set_lib_env()
+        args = ["xvlog", "--sv"] + self.files
+        self._run(args, self.cwd, env, True)
+        lib_name = os.path.splitext(self.lib_path)[0]
+        args = ["xelab", "--sv_lib", lib_name, self.top_name]
+        self._run(args, self.cwd, env, True)
+        args = ["xsim", "-R", self.top_name]
+        self._run(args, self.cwd, env, blocking)

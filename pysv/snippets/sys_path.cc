@@ -1,4 +1,6 @@
 void check_sys_path(const char *python_lib) {
+    // always check guard first
+    initialize_guard();
     // only modify the sys.path if the one is . (set by pybind)
     auto sys = py::module::import("sys");
     auto sys_path = sys.attr("path");
@@ -6,7 +8,10 @@ void check_sys_path(const char *python_lib) {
     if (last_path_len == 1) {
         // need to set the path
         // clear first
-        sys.attr("path").attr("clear")();
+        if (!has_py_env_set) {
+            sys.attr("path").attr("clear")();
+        }
+
         for (auto const path: SYS_PATH) {
             sys.attr("path").attr("append")(py::str(path));
         }

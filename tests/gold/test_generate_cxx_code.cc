@@ -2,6 +2,7 @@
 #include "pybind11/include/pybind11/eval.h"
 #include <iostream>
 #include <unordered_map>
+#include <memory>
 
 // used for ModelSim/Questa to resolve some runtime native library loading issues
 // not needed for Xcelium and vcs, but include just in case

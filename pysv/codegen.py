@@ -330,11 +330,14 @@ def generate_bootstrap_code(pretty_print=True, add_sys_path=True, add_class=True
     result = __get_code_snippet("include_header.hh")
 
     result += "namespace py = pybind11;\n"
-    result += "py::scoped_interpreter guard;\n"
+    if not add_sys_path:
+        result += "py::scoped_interpreter guard;\n"
     result += "std::string {0};\n".format(__GLOBAL_STRING_VAR_NAME)
+
     if add_class:
         result += "std::unordered_map<void*, py::object> {0};\n".format(__PY_OBJ_MAP_NAME)
     if add_sys_path:
+        result += __get_code_snippet("initialize_guard.cc")
         result += generate_sys_path_values(pretty_print)
         result += __get_code_snippet("sys_path.cc")
     if add_class:
@@ -345,9 +348,10 @@ def generate_bootstrap_code(pretty_print=True, add_sys_path=True, add_class=True
 
 
 def generate_pybind_code(func_defs: List[Union[type, DPIFunctionCall]], pretty_print: bool = True,
-                         namespace: str = "pysv"):
+                         namespace: str = "pysv", add_sys_path: bool = False):
     add_class = should_add_class(func_defs)
-    add_sys_path = should_add_class(func_defs)
+    if not add_sys_path:
+        add_sys_path = should_add_class(func_defs)
     result = generate_bootstrap_code(pretty_print, add_sys_path=add_sys_path, add_class=add_class) + "\n"
     # generate extern C block
     result += 'extern "C" {\n'

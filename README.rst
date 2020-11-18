@@ -27,6 +27,7 @@ should work. Here is a list of simulators that have been tested:
 -  Cadence® Xcelium™
 -  Synopsys VCS®
 -  Mentor Questa®
+-  Vivado® Simulator
 -  Verilator
 
 Dependencies

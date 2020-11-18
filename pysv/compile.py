@@ -5,7 +5,13 @@ import shutil
 import platform
 
 
-def compile_lib(func_defs, cwd, lib_name="pysv", pretty_print=True, release_build=False, clean_up_build=False):
+def compile_lib(func_defs, cwd, lib_name="pysv", pretty_print=True, release_build=False, clean_up_build=False,
+                add_sys_path=False):
+    """
+    Compile the python code into a shared library.
+    if your simulator ships with its own Python distribution, e.g. Vivado simulator, you
+    need to set this to True, otherwise leave it as is and pysv will figure it out
+    """
     if not os.path.isdir(cwd):
         os.makedirs(cwd, exist_ok=True)
     # notice that fo follow the "lib" + name convention so the linker can find the library easily
@@ -25,7 +31,7 @@ def compile_lib(func_defs, cwd, lib_name="pysv", pretty_print=True, release_buil
     shutil.copyfile(cmake_file, os.path.join(cwd, "CMakeLists.txt"))
 
     # codegen the target
-    src = generate_pybind_code(func_defs, pretty_print)
+    src = generate_pybind_code(func_defs, pretty_print, add_sys_path=add_sys_path)
     output_filename = os.path.join(cwd, "{0}.cc".format(lib_name))
     skip_write_out = False
     if os.path.exists(output_filename):
