@@ -66,6 +66,15 @@ def test_sv_simulator(get_vector_filename, simulator):
 
 @pytest.mark.skipif(find_spec("tensorflow") is None, reason="Tensorflow not installed")
 def test_tensorflow(get_vector_filename):
+    # figuring out which simulator to use
+    tester_cls = None
+    for tester_name, (avail, cls) in simulator_map.items():
+        if avail():
+            tester_cls = cls
+            print("Using", tester_name, "for simulation")
+            break
+    if tester_cls is None:
+        pytest.skip("Unable to find any commercial simulator")
     import tensorflow as tf
 
     @sv()
