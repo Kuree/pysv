@@ -10,13 +10,17 @@
 #include <dlfcn.h>
 #endif
 namespace py = pybind11;
-py::scoped_interpreter guard;
+std::unique_ptr<py::scoped_interpreter> guard = nullptr;
 std::string string_result_value;
+void check_interpreter() {
+    if (!guard) guard = std::unique_ptr<py::scoped_interpreter>(new py::scoped_interpreter());
+}
 
 extern "C" {
 __attribute__((visibility("default"))) int32_t simple_func(int32_t a,
                                                            int32_t b,
                                                            int32_t c) {
+  check_interpreter();
   auto locals = py::dict();
   locals["__a"] = a;
   locals["__b"] = b;

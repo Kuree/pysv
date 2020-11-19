@@ -11,6 +11,7 @@ __GLOBAL_STRING_VAR_NAME = "string_result_value"
 __PY_OBJ_MAP_NAME = "py_obj_map"
 __SYS_PATH_NAME = "SYS_PATH"
 __SYS_PATH_FUNC_NAME = "check_sys_path"
+__CHECK_INTERPRETER = "check_interpreter"
 __PYTHON_LIBRARY = "PYTHON_LIBRARY"
 __IMPORT_MODULE = "import_module"
 
@@ -316,12 +317,18 @@ def generate_return_value(func_def: Union[Function, DPIFunctionCall]):
     return result
 
 
+def generate_check_interpreter():
+    return __INDENTATION + __CHECK_INTERPRETER + "();\n"
+
+
 def generate_cxx_function(func_def: Union[Function, DPIFunctionCall], pretty_print: bool = True,
                           add_sys_path: bool = True):
     result = get_c_function_signature(func_def, pretty_print)
     result += " {\n"
     if add_sys_path:
         result += generate_sys_path_check()
+    else:
+        result += generate_check_interpreter()
     result += generate_global_variables(func_def)
     result += generate_local_variables(func_def)
     result += generate_execute_code(func_def, pretty_print)
@@ -349,8 +356,7 @@ def generate_bootstrap_code(pretty_print=True, add_sys_path=True, add_class=True
     result = __get_code_snippet("include_header.hh")
 
     result += "namespace py = pybind11;\n"
-    if not add_sys_path:
-        result += "py::scoped_interpreter guard;\n"
+    result += "std::unique_ptr<py::scoped_interpreter> guard = nullptr;\n"
     result += "std::string {0};\n".format(__GLOBAL_STRING_VAR_NAME)
 
     if add_class:
@@ -359,6 +365,8 @@ def generate_bootstrap_code(pretty_print=True, add_sys_path=True, add_class=True
         result += __get_code_snippet("initialize_guard.cc")
         result += generate_sys_path_values(pretty_print)
         result += __get_code_snippet("sys_path.cc")
+    else:
+        result += __get_code_snippet("check_interpreter.cc")
     if add_class:
         result += __get_code_snippet("call_class_func.cc")
         result += __get_code_snippet("create_class_func.cc")

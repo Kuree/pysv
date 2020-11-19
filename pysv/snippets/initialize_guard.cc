@@ -1,5 +1,3 @@
-std::unique_ptr<py::scoped_interpreter> guard = nullptr;
-
 std::string get_env(const char *name) {
     std::string result;
 #ifdef _WIN32
