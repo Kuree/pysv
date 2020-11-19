@@ -395,7 +395,7 @@ def generate_pybind_code(func_defs: List[Union[type, DPIFunctionCall]], pretty_p
                          namespace: str = "pysv", add_sys_path: bool = False):
     add_class = should_add_class(func_defs)
     if not add_sys_path:
-        add_sys_path = should_add_class(func_defs)
+        add_sys_path = should_add_sys_path(func_defs)
     add_imports = __has_imports(func_defs)
     result = generate_bootstrap_code(pretty_print, add_sys_path=add_sys_path, add_class=add_class,
                                      add_imports=add_imports) + "\n"

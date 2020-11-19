@@ -30,7 +30,8 @@ setup(
     ],
     python_requires=">=3.6",
     extras_require={
-        "test": ["numpy", "pytest"]
+        "test": ["numpy", "pytest"],
+        "test-full": ["tensorflow-cpu", "pytest"]
     },
     package_data={
         "pysv": package_data

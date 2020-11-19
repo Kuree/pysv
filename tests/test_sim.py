@@ -1,5 +1,6 @@
 import pysv.util
 from pysv import sv, compile_lib, DataType, generate_cxx_binding, generate_sv_binding
+from importlib.util import find_spec
 import tempfile
 import pytest
 import os
@@ -63,8 +64,31 @@ def test_sv_simulator(get_vector_filename, simulator):
         tester.run()
 
 
+@pytest.mark.skipif(find_spec("tensorflow") is None, reason="Tensorflow not installed")
+def test_tensorflow(get_vector_filename):
+    import tensorflow as tf
+
+    @sv()
+    def simple_mat_mal(a, b):
+        c = tf.constant([[a, a], [a, a]])
+        d = tf.constant([[b, b], [b, b]])
+        e = tf.matmul(c, d)
+        n = e.numpy()
+        s = np.sum(n)
+        return s
+
+    with tempfile.TemporaryDirectory() as temp:
+        lib_path = compile_lib([simple_mat_mal], cwd=temp)
+        sv_pkg = os.path.join(os.path.abspath(temp), "pysv_pkg.sv")
+        generate_sv_binding([simple_mat_mal], filename=sv_pkg)
+        tb_file = get_vector_filename("test_tensorflow.sv")
+
+        tester = pysv.util.XceliumTester(lib_path, sv_pkg, tb_file, cwd=temp)
+        tester.run()
+
+
 if __name__ == "__main__":
     from conftest import get_vector_filename_fn
-    test_sv_simulator(get_vector_filename_fn, "vivado")
+    test_tensorflow(get_vector_filename_fn)
 
 

@@ -22,8 +22,8 @@ def should_add_sys_path(func_defs):
         else:
             defs.append(func_def)
     built_in_modules = sys.builtin_module_names
-    for func_def in defs:
-        for module_name in func_def.imports.values():
+    for func in defs:
+        for module_name in func.func_def.imports.values():
             if module_name not in built_in_modules:
                 return True
     return False
