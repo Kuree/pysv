@@ -34,4 +34,7 @@ __result = simple_func(__a, __b, __c)
 )", globals, locals);
   return locals["__result"].cast<int32_t>();
 }
+__attribute__((visibility("default"))) void pysv_finalize() {
+  guard.reset();
+}
 }

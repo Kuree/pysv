@@ -1,5 +1,5 @@
 from typing import Union, List
-from .function import Function, DPIFunctionCall
+from .function import Function, DPIFunctionCall, sv
 from .types import DataType
 from .model import check_class_ctor, get_dpi_functions, inject_destructor, check_class_method
 from .util import should_add_class, should_add_sys_path
@@ -375,6 +375,21 @@ def generate_bootstrap_code(pretty_print=True, add_sys_path=True, add_class=True
 
     return result
 
+@sv()
+def pysv_finalize():
+    # a dummy to allow runtime to be reset
+    pass
+
+
+def generate_runtime_finalize(pretty_print, add_sys_path):
+    result = get_c_function_signature(pysv_finalize, pretty_print) + " {\n"
+    if add_sys_path:
+        result += __get_code_snippet("finalize_runtime.cc")
+    else:
+        result += __INDENTATION + "guard.reset();\n"
+    result += "}\n"
+    return result
+
 
 def generate_pybind_code(func_defs: List[Union[type, DPIFunctionCall]], pretty_print: bool = True,
                          namespace: str = "pysv", add_sys_path: bool = False):
@@ -393,6 +408,7 @@ def generate_pybind_code(func_defs: List[Union[type, DPIFunctionCall]], pretty_p
     for func_def in new_defs:
         code_blocks.append(generate_cxx_function(func_def, pretty_print=pretty_print, add_sys_path=add_sys_path))
     result += "\n".join(code_blocks)
+    result += generate_runtime_finalize(pretty_print=pretty_print, add_sys_path=add_sys_path)
     result += "}\n"
 
     # notice that if there is classes involved, we also need to generate the class implementation
@@ -410,6 +426,8 @@ def generate_c_header(func_def: Union[Function, DPIFunctionCall], pretty_print: 
 
 def generate_c_headers(func_defs, pretty_print: bool = True):
     headers = []
+    # finalize is a built-in function
+    func_defs += [pysv_finalize]
     for func_def in func_defs:
         if type(func_def) == type:
             funcs = get_dpi_functions(func_def)
@@ -473,7 +491,7 @@ def generate_sv_binding(func_defs: List[Union[type, DPIFunctionCall]], pkg_name=
     __initialize_class_defs(func_defs)
 
     # produce DPI imports
-    result += generate_dpi_definitions(func_defs, pretty_print)
+    result += generate_dpi_definitions(func_defs + [pysv_finalize], pretty_print)
 
     # generate class definition
     for func_def in func_defs:

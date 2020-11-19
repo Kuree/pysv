@@ -9,6 +9,7 @@ int32_t SomeClass_plus(void* self,
 void SomeClass_print_a(void* self);
 void SomeClass_print_b(void* self,
                        int32_t num);
+void pysv_finalize();
 }
 namespace pysv {
 class SomeClass {

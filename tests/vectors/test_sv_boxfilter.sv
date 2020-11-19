@@ -1,6 +1,6 @@
 module top;
 
-import pysv::BoxFilter;
+import pysv::BoxFilter, pysv::pysv_finalize;
 
 localparam int FILTER_SIZE = 4;
 
@@ -37,6 +37,8 @@ initial begin
         assert (out == model.avg()) else $error("expect %d, got %d", model.avg(), out);
     end
 
+    // need to destroy the runtime
+    pysv_finalize();
     $finish();
 end
 
