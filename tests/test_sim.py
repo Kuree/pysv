@@ -66,15 +66,11 @@ def test_sv_simulator(get_vector_filename, simulator):
 
 @pytest.mark.skipif(find_spec("tensorflow") is None, reason="Tensorflow not installed")
 def test_tensorflow(get_vector_filename):
-    # figuring out which simulator to use
-    tester_cls = None
-    for tester_name, (avail, cls) in simulator_map.items():
-        if avail():
-            tester_cls = cls
-            print("Using", tester_name, "for simulation")
-            break
-    if tester_cls is None:
-        pytest.skip("Unable to find any commercial simulator")
+    # should work with any simulator, but it seems like the Xcelium we have doesn't ship
+    # with the latest libstdc++. Use vcs instead
+    avail, tester_cls = simulator_map["vcs"]
+    if not avail():
+        pytest.skip("VCS not available")
     import tensorflow as tf
 
     @sv()
@@ -92,7 +88,7 @@ def test_tensorflow(get_vector_filename):
         generate_sv_binding([simple_mat_mal], filename=sv_pkg)
         tb_file = get_vector_filename("test_tensorflow.sv")
 
-        tester = pysv.util.XceliumTester(lib_path, sv_pkg, tb_file, cwd=temp)
+        tester = tester_cls(lib_path, sv_pkg, tb_file, cwd=temp)
         tester.run()
 
 
