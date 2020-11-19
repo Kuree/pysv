@@ -3,6 +3,7 @@ import shutil
 import subprocess
 import os
 import abc
+import distutils.sysconfig as sysconfig
 
 
 def should_add_class(func_defs):
@@ -21,10 +22,19 @@ def should_add_sys_path(func_defs):
             defs.append(func_def.__init__)
         else:
             defs.append(func_def)
-    built_in_modules = sys.builtin_module_names
+    # get all the standard lib names
+    std_lib = sysconfig.get_python_lib(standard_lib=True)
+    modules = set()
+    for top in os.listdir(std_lib):
+        if os.path.isdir(top):
+            modules.add(top)
+        else:
+            name, ext = os.path.splitext(top)
+            if ext == ".py":
+                modules.add(name)
     for func in defs:
         for module_name in func.func_def.imports.values():
-            if module_name not in built_in_modules:
+            if module_name not in modules and module_name != "pysv":
                 return True
     return False
 
