@@ -55,5 +55,15 @@ def test_numpy():
         assert int(outputs) == -2
 
 
+def test_empty_global():
+    @sv()
+    def foo():
+        pass
+
+    foo.func_def.imports = {}
+    with tempfile.TemporaryDirectory() as temp:
+        compile_lib([foo], cwd=temp)
+
+
 if __name__ == "__main__":
-    test_numpy()
+    test_empty_global()

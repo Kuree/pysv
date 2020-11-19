@@ -262,9 +262,8 @@ def generate_local_variables(func_def: Union[Function, DPIFunctionCall]):
 def generate_global_variables(func_def: Union[Function, DPIFunctionCall]):
     func_def = __get_func_def(func_def)
     imports = func_def.imports
-    result = ""
+    result = __INDENTATION + "auto globals = py::dict();\n"
     if len(imports) > 0:
-        result = __INDENTATION + "auto globals = py::dict();\n"
         for n, m in imports.items():
             result += __INDENTATION + '{0}("{1}", "{2}", globals);\n'.format(__IMPORT_MODULE, m, n)
         result += "\n"
