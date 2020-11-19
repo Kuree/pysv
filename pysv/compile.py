@@ -103,6 +103,7 @@ def compile_and_run(lib_path, cxx_content, cwd, func_defs, extra_headers=""):
         f.write("\n")
         f.write("int main() {\n")
         f.write(cxx_content)
+        f.write("pysv_finalize();\n")
         f.write("\nreturn 0;\n}")
     # need to figure out the system CXX compiler
     # this is not portable but good enough

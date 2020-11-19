@@ -42,4 +42,7 @@ int main () {
         vtop.clk = 0;
         vtop.eval();
     }
+
+    // tear down the runtime
+    pysv_finalize();
 }

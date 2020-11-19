@@ -354,13 +354,8 @@ def generate_sys_path_values(pretty_print=True):
 
 def generate_bootstrap_code(pretty_print=True, add_sys_path=True, add_class=True, add_imports=True):
     result = __get_code_snippet("include_header.hh")
+    result += __get_code_snippet("runtime_values.cc")
 
-    result += "namespace py = pybind11;\n"
-    result += "std::unique_ptr<py::scoped_interpreter> guard = nullptr;\n"
-    result += "std::string {0};\n".format(__GLOBAL_STRING_VAR_NAME)
-
-    if add_class:
-        result += "std::unordered_map<void*, py::object> {0};\n".format(__PY_OBJ_MAP_NAME)
     if add_sys_path:
         result += __get_code_snippet("initialize_guard.cc")
         result += generate_sys_path_values(pretty_print)
@@ -381,12 +376,9 @@ def pysv_finalize():
     pass
 
 
-def generate_runtime_finalize(pretty_print, add_sys_path):
+def generate_runtime_finalize(pretty_print):
     result = get_c_function_signature(pysv_finalize, pretty_print) + " {\n"
-    if add_sys_path:
-        result += __get_code_snippet("finalize_runtime.cc")
-    else:
-        result += __INDENTATION + "guard.reset();\n"
+    result += __get_code_snippet("finalize_runtime.cc")
     result += "}\n"
     return result
 
@@ -408,7 +400,7 @@ def generate_pybind_code(func_defs: List[Union[type, DPIFunctionCall]], pretty_p
     for func_def in new_defs:
         code_blocks.append(generate_cxx_function(func_def, pretty_print=pretty_print, add_sys_path=add_sys_path))
     result += "\n".join(code_blocks)
-    result += generate_runtime_finalize(pretty_print=pretty_print, add_sys_path=add_sys_path)
+    result += generate_runtime_finalize(pretty_print=pretty_print)
     result += "}\n"
 
     # notice that if there is classes involved, we also need to generate the class implementation

@@ -10,8 +10,11 @@
 #include <dlfcn.h>
 #endif
 namespace py = pybind11;
+std::unique_ptr<std::unordered_map<std::string, py::object>> global_imports = nullptr;
 std::unique_ptr<py::scoped_interpreter> guard = nullptr;
+std::unique_ptr<std::unordered_map<void*, py::object>> py_obj_map;
 std::string string_result_value;
+
 void check_interpreter() {
     if (!guard) guard = std::unique_ptr<py::scoped_interpreter>(new py::scoped_interpreter());
 }
@@ -35,6 +38,11 @@ __result = simple_func(__a, __b, __c)
   return locals["__result"].cast<int32_t>();
 }
 __attribute__((visibility("default"))) void pysv_finalize() {
-  guard.reset();
+    // clear the cached global imports
+    global_imports.reset();
+    // clear the object map
+    py_obj_map.reset();
+    // the last part is tear down the runtime
+    guard.reset();
 }
 }
