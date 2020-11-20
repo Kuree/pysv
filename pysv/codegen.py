@@ -70,6 +70,8 @@ def generate_dpi_signature(func_def: Union[Function, DPIFunctionCall],
 
 
 def generate_dpi_definitions(func_defs, pretty_print=True):
+    if pysv_finalize not in func_defs:
+        func_defs = func_defs + [pysv_finalize]
     new_defs = __get_func_defs(func_defs)
     result = ""
     for func in new_defs:
@@ -418,7 +420,8 @@ def generate_c_header(func_def: Union[Function, DPIFunctionCall], pretty_print: 
 def generate_c_headers(func_defs, pretty_print: bool = True):
     headers = []
     # finalize is a built-in function
-    func_defs += [pysv_finalize]
+    if pysv_finalize not in func_defs:
+        func_defs = func_defs + [pysv_finalize]
     for func_def in func_defs:
         if type(func_def) == type:
             funcs = get_dpi_functions(func_def)
@@ -482,7 +485,7 @@ def generate_sv_binding(func_defs: List[Union[type, DPIFunctionCall]], pkg_name=
     __initialize_class_defs(func_defs)
 
     # produce DPI imports
-    result += generate_dpi_definitions(func_defs + [pysv_finalize], pretty_print)
+    result += generate_dpi_definitions(func_defs, pretty_print)
 
     # generate class definition
     for func_def in func_defs:
