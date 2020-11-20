@@ -127,6 +127,10 @@ class DPIFunctionCall:
         # due to python importing order we don't want to introduce circular import here
         self.func_def: DPIFunction = func_def
 
+        # used by third-party libraries to store information temporarily. will not be touched
+        # by pysv
+        self.meta = None
+
     def __get__(self, instance, owner):
         # see SO answer here: https://stackoverflow.com/a/48491028
         self.func_def.parent_class = owner
@@ -162,9 +166,9 @@ class DPIFunctionCallInstance:
         self.args = args
         self.kwargs = kwargs
 
-    def str(self, is_sv: bool = True, arg_to_str: Callable = lambda x: str(x), class_var_name=None):
+    def str(self, is_sv: bool = True, arg_to_str: Callable = lambda x: str(x), class_var_name=None, use_ptr=False):
         """Return function call and proper ordering. notice that if it is a class method
-        call, users are responsible to prefix [var_name].
+        call, you need to specify class_var_name and use_ptr.
         """
         func_def = self.func_call.func_def
         if func_def.is_init:
@@ -196,7 +200,14 @@ class DPIFunctionCallInstance:
         arg_str = ", ".join(arg_values)
         result = "{0}({1})".format(func_name, arg_str)
         if func_def.parent_class is not None and class_var_name is not None:
-            result = "{0}.{1}".format(class_var_name, result)
+            if not is_sv and use_ptr:
+                dot = "->"
+            else:
+                dot = "."
+            result = "{0}{1}{2}".format(class_var_name, dot, result)
+        if not is_sv and use_ptr and func_def.is_init:
+            # create new. users are free to wrap it with smart pointers
+            result = "new " + result
         return result
 
 

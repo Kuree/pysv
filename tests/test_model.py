@@ -90,6 +90,10 @@ def test_model_make_call():
     v = make_call(TestModel.foo, 1)
     v_str = v.str(class_var_name="test")
     assert v_str == "test.foo(1)"
+    v_str = v.str(is_sv=False, class_var_name="test", use_ptr=True)
+    assert v_str == "test->foo(1)"
+    v_str = make_call(TestModel, 1, 2).str(is_sv=False, use_ptr=True)
+    assert v_str == "new TestModel(1, 2)"
 
 
 if __name__ == "__main__":
