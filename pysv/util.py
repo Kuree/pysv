@@ -39,6 +39,12 @@ def should_add_sys_path(func_defs):
     return False
 
 
+def make_dirs(filename):
+    dirname = os.path.dirname(filename)
+    if not os.path.exists(dirname):
+        os.makedirs(dirname, exist_ok=True)
+
+
 def is_xcelium_available():
     return shutil.which("xrun") is not None
 

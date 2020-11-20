@@ -12,7 +12,7 @@ package_data = []
 for f in Path(os.path.join(current_directory, "pysv")).rglob("*"):
     path = os.path.join(current_directory, f.relative_to(current_directory))
     ext = os.path.splitext(path)[-1]
-    if ext in {".cc", ".hh", ".cpp", ".h", ".c", ".txt", ".in"}:
+    if ext in {".cc", ".hh", ".cpp", ".h", ".c", ".txt", ".in", ".cmake"} and "test" not in path:
         package_data.append(path)
 
 

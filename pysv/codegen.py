@@ -2,7 +2,7 @@ from typing import Union, List
 from .function import Function, DPIFunctionCall, sv
 from .types import DataType
 from .model import check_class_ctor, get_dpi_functions, inject_destructor, check_class_method
-from .util import should_add_class, should_add_sys_path
+from .util import should_add_class, should_add_sys_path, make_dirs
 import os
 import sys
 
@@ -495,6 +495,7 @@ def generate_sv_binding(func_defs: List[Union[type, DPIFunctionCall]], pkg_name=
     result += "`endif // {0}\n".format(guard_name)
 
     if filename is not None:
+        make_dirs(filename)
         with open(filename, "w+") as f:
             f.write(result)
 
@@ -587,6 +588,7 @@ def generate_cxx_binding(func_defs: List[Union[type, DPIFunctionCall]], pretty_p
     result += "#endif // {0}\n".format(header_name)
 
     if filename is not None:
+        make_dirs(filename)
         with open(filename, "w+") as f:
             f.write(result)
 
