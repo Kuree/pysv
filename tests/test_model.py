@@ -1,7 +1,7 @@
 import sys  # don't remove this import
 from pysv import sv, compile_lib
 from pysv.compile import compile_and_run
-from pysv.function import DPIFunctionCall
+from pysv.function import DPIFunctionCall, make_call
 from pysv.model import get_dpi_functions, check_class_ctor
 from pysv.pyast import get_class_src
 import tempfile
@@ -86,5 +86,11 @@ def test_error_class_sv():
         pass
 
 
+def test_model_make_call():
+    v = make_call(TestModel.foo, 1)
+    v_str = v.str(class_var_name="test")
+    assert v_str == "test.foo(1)"
+
+
 if __name__ == "__main__":
-    test_error_class_sv()
+    test_model_make_call()

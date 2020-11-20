@@ -156,7 +156,7 @@ class DPIFunctionCallInstance:
         self.args = args
         self.kwargs = kwargs
 
-    def str(self, is_sv: bool = True, arg_to_str: Callable = lambda x: str(x)):
+    def str(self, is_sv: bool = True, arg_to_str: Callable = lambda x: str(x), class_var_name=None):
         """Return function call and proper ordering. notice that if it is a class method
         call, users are responsible to prefix [var_name].
         """
@@ -175,6 +175,9 @@ class DPIFunctionCallInstance:
         args = []
         idx = 0
         arg_names = func_def.arg_names
+        if func_def.parent_class is not None:
+            # this is a class method call
+            arg_names = arg_names[1:]
         for arg_name in arg_names:
             if arg_name not in self.kwargs:
                 assert idx < len(self.args), "Invalid function call"
@@ -186,6 +189,8 @@ class DPIFunctionCallInstance:
         arg_values = [arg_to_str(arg) for arg in args]
         arg_str = ", ".join(arg_values)
         result = "{0}({1})".format(func_name, arg_str)
+        if func_def.parent_class is not None and class_var_name is not None:
+            result = "{0}.{1}".format(class_var_name, result)
         return result
 
 
