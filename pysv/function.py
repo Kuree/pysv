@@ -186,7 +186,7 @@ class DPIFunctionCallInstance:
             else:
                 args.append(self.kwargs[arg_name])
         # need to transform them into string
-        arg_values = [arg_to_str(arg) for arg in args]
+        arg_values = [str(arg_to_str(arg)) for arg in args]
         arg_str = ", ".join(arg_values)
         result = "{0}({1})".format(func_name, arg_str)
         if func_def.parent_class is not None and class_var_name is not None:
