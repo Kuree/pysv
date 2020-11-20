@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+# [0.0.4] - 2020-11-20
+### Added
+- Better func_def filtering to figure out proper inputs to the codegen
+- Meta information holder for the exported function to be used by other libraries. The variable will not be touch by pysv
+
+### Changed
+- str() interface is enhanced to account for various usage types
+
+### Fixed
+- arg_to_str will force to convert values to str
+
+
 # [0.0.3] - 2020-11-19
 ### Changed
 - When code generate binding files, directory will be created automatically if not exist
