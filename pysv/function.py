@@ -149,6 +149,12 @@ class DPIFunctionCall:
     def func_name(self):
         return self.func_def.func_name
 
+    def __hash__(self):
+        return hash(self.func_def.func)
+
+    def __eq__(self, other):
+        return isinstance(other, DPIFunctionCall) and self.func_def.func == other.func_def.func
+
 
 class DPIFunctionCallInstance:
     def __init__(self, func_call: DPIFunctionCall, *args, **kwargs):

@@ -45,6 +45,29 @@ def make_dirs(filename):
         os.makedirs(dirname, exist_ok=True)
 
 
+def make_unique_func_defs(func_defs):
+    # first remove any functions that's class method
+    result = []
+    classes = []
+    for func_def in func_defs:
+        if type(func_def) == type:
+            if func_def not in classes:
+                result.append(func_def)
+                classes.append(func_def)
+        else:
+            if func_def.func_def.parent_class is not None:
+                cls = func_def.func_def.parent_class
+                if cls not in classes:
+                    classes.append(cls)
+                    result.append(cls)
+            else:
+                result.append(func_def)
+
+    seen = set()
+    seen_add = seen.add
+    return [x for x in result if not (x in seen or seen_add(x))]
+
+
 def is_xcelium_available():
     return shutil.which("xrun") is not None
 
