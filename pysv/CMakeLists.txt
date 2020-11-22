@@ -4,21 +4,12 @@ project(${TARGET})
 
 add_subdirectory(pybind11)
 
-# this is to avoid glibc++ mismatch between the ones shipped with the simulator
-# and the one you're currently using. only valid for Linux since most EDA tools only
-# work on Linux
-if(UNIX AND NOT APPLE)
-    set(STATIC_FLAG "-static-libgcc -static-libstdc++")
-    set(CMAKE_CXX_FLAGS "-Wl,--whole-archive -Wl,--no-whole-archive -lgcc -lstdc++")
-endif()
-
 if (APPLE)
     pybind11_add_module(${TARGET} SHARED ${TARGET}.cc)
 else()
     pybind11_add_module(${TARGET} MODULE ${TARGET}.cc)
 endif()
 
-target_link_libraries(${TARGET} PUBLIC ${STATIC_FLAG})
 target_link_libraries(${TARGET} PRIVATE pybind11::embed)
 
 set(SHARED_LIB_EXT ".so")
