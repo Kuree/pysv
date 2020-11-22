@@ -27,6 +27,8 @@ def _inspect_frame(num_frame=2) -> Dict[str, str]:
             if module_name in __EXCLUDE_MODULE_NAME:
                 # don't care about excluded names
                 continue
+            if module_name == "__main__" or "<locals>" in val.__qualname__:
+                raise NotImplementedError("Current only support importing from packages without local scope")
             full_name = "{0}.{1}".format(val.__module__, val.__qualname__)
             imports[name] = full_name
     return imports
