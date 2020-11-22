@@ -371,10 +371,13 @@ def generate_bootstrap_code(pretty_print=True, add_sys_path=True, add_class=True
 
     return result
 
-@sv()
+
 def pysv_finalize():
     # a dummy to allow runtime to be reset
     pass
+
+
+pysv_finalize = sv()(pysv_finalize)
 
 
 def generate_runtime_finalize(pretty_print):
