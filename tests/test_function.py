@@ -83,19 +83,17 @@ def test_auto_set_return():
     assert func_call.func_def.return_type == DataType.Void
 
 
-def local_type_import():
+def test_local_type_import():
     class A:
         def foo(self):
             print("foo")
 
-    try:
-        @sv()
-        def foo():
-            a = A()
-            a.foo()
-        assert False
-    except NotImplementedError:
-        pass
+    @sv()
+    def foo():
+        a = A()
+        a.foo()
+
+    assert "A" not in foo.func_def.imports
 
 
 if __name__ == "__main__":

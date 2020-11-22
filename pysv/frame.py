@@ -1,5 +1,6 @@
 import inspect
 import types
+import sys
 from typing import Dict
 
 __EXCLUDE_MODULE_NAME = {"__builtins__", "@py_builtins", "@pytest_ar", "pytest", "pysv"}
@@ -27,8 +28,8 @@ def _inspect_frame(num_frame=2) -> Dict[str, str]:
             if module_name in __EXCLUDE_MODULE_NAME:
                 # don't care about excluded names
                 continue
-            if module_name == "__main__" or "<locals>" in val.__qualname__:
-                raise NotImplementedError("Current only support importing from packages without local scope")
             full_name = "{0}.{1}".format(val.__module__, val.__qualname__)
+            if module_name == "__main__" or "<locals>" in val.__qualname__:
+                continue
             imports[name] = full_name
     return imports
