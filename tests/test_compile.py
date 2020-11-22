@@ -65,5 +65,26 @@ def test_empty_global():
         compile_lib([foo], cwd=temp)
 
 
+def test_type_import():
+    from random import Random
+
+    @sv()
+    def foo():
+        rand = Random()
+        rand.seed(0)
+        val = rand.randint(0, 42)
+        print(val)
+
+    with tempfile.TemporaryDirectory() as temp:
+        lib_file = compile_lib([foo], cwd=temp)
+        call_str = foo.make_call().str() + ";\n"
+        value = compile_and_run(lib_file, call_str, temp, [foo])
+        value = int(value)
+        rand = Random()
+        rand.seed(0)
+        expected = rand.randint(0, 42)
+        assert value == expected
+
+
 if __name__ == "__main__":
-    test_empty_global()
+    test_type_import()

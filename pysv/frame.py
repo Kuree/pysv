@@ -21,4 +21,12 @@ def _inspect_frame(num_frame=2) -> Dict[str, str]:
     for name, val in visible_vars.items():
         if isinstance(val, types.ModuleType) and name not in __EXCLUDE_MODULE_NAME:
             imports[name] = val.__name__
+        elif isinstance(val, type):
+            # we support class type import as well
+            module_name = val.__module__.split(".")[0]
+            if module_name in __EXCLUDE_MODULE_NAME:
+                # don't care about excluded names
+                continue
+            full_name = "{0}.{1}".format(val.__module__, val.__qualname__)
+            imports[name] = full_name
     return imports
