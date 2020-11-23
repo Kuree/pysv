@@ -131,13 +131,13 @@ def test_cxx_object_input():
             return self.a.num + a.num
 
     with tempfile.TemporaryDirectory() as temp:
-        temp = "temp"
         lib_file = compile_lib([ClassA, ClassB], cwd=temp)
         cxx_code = """
 using namespace pysv;
 ClassA a;
 ClassB b(&a);
 std::cout << b.add(&a);
+pysv_finalize();
         """
         value = compile_and_run(lib_file, cxx_code, temp, [ClassA, ClassB], use_implementation=True)
         value = int(value)
