@@ -96,5 +96,17 @@ def test_local_type_import():
     assert "A" not in foo.func_def.imports
 
 
+def test_explicit_import():
+    import random
+
+    @sv(imports={"RND": random.Random})
+    def foo():
+        pass
+
+    assert "RND" in foo.func_def.imports
+    assert foo.func_def.imports["RND"] == "random.Random"
+    assert len(foo.func_def.imports) == 1
+
+
 if __name__ == "__main__":
-    test_auto_set_return()
+    test_explicit_import()

@@ -20,16 +20,28 @@ def _inspect_frame(num_frame=2) -> Dict[str, str]:
     visible_vars.update(local_vars)
     imports: Dict[str, str] = {}
     for name, val in visible_vars.items():
-        if isinstance(val, types.ModuleType) and name not in __EXCLUDE_MODULE_NAME:
-            imports[name] = val.__name__
-        elif isinstance(val, type):
-            # we support class type import as well
-            module_name = val.__module__.split(".")[0]
-            if module_name in __EXCLUDE_MODULE_NAME:
-                # don't care about excluded names
-                continue
-            full_name = "{0}.{1}".format(val.__module__, val.__qualname__)
-            if module_name == "__main__" or "<locals>" in val.__qualname__:
-                continue
+        full_name = None
+        if isinstance(val, types.ModuleType):
+            if name not in __EXCLUDE_MODULE_NAME:
+                full_name = _get_import_name(val)
+        else:
+            full_name = _get_import_name(val)
+        if full_name is not None:
             imports[name] = full_name
     return imports
+
+
+def _get_import_name(val, check_type=True):
+    if isinstance(val, types.ModuleType):
+        return val.__name__
+    elif isinstance(val, type):
+        # we support class type import as well
+        module_name = val.__module__.split(".")[0]
+        if check_type and module_name in __EXCLUDE_MODULE_NAME:
+            # don't care about excluded names
+            return None
+        full_name = "{0}.{1}".format(val.__module__, val.__qualname__)
+        if check_type and module_name == "__main__" or "<locals>" in val.__qualname__:
+            return None
+        return full_name
+    return None

@@ -2,7 +2,7 @@ import inspect
 import abc
 from typing import Dict, List, Union, Callable
 from .types import DataType
-from .frame import _inspect_frame
+from .frame import _inspect_frame, _get_import_name
 from .pyast import get_function_src, get_class_src, has_return
 
 
@@ -45,11 +45,18 @@ class Function:
 
 
 class DPIFunction(Function):
-    def __init__(self, return_type: DataType = DataType.Int, **arg_types):
+    def __init__(self, return_type: DataType = DataType.Int, imports=None, **arg_types):
         super().__init__()
         self.return_type = return_type
         assert isinstance(self.return_type, DataType), "Return type has to be of " + DataType.__name__
-        self.imports = _inspect_frame()
+        if imports is None:
+            self.imports = _inspect_frame()
+        else:
+            self.imports = {}
+            for name, val in imports.items():
+                val_name = _get_import_name(val, False)
+                assert val_name is not None, "Unable to import {0}".format(val)
+                self.imports[name] = val_name
 
         self.func = None
 
