@@ -38,6 +38,7 @@ def should_add_sys_path(func_defs):
         else:
             func_def = func
         for module_name in func_def.imports.values():
+            module_name = module_name.split(".")[0]
             if module_name not in modules and module_name != "pysv":
                 return True
     return False

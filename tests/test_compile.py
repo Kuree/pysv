@@ -99,5 +99,20 @@ def test_no_call_sv_compile():
         generate_sv_binding([foo], filename=os.path.join(temp, "test.svh"))
 
 
+def test_function_import():
+    from random import randint
+
+    @sv()
+    def rand_():
+        print(randint(0, 42))
+
+    with tempfile.TemporaryDirectory() as temp:
+        lib_file = compile_lib([rand_], cwd=temp)
+        call_str = rand_.make_call().str() + ";\n"
+        value = compile_and_run(lib_file, call_str, temp, [rand_])
+        value = int(value)
+        assert value in range(0, 42)
+
+
 if __name__ == "__main__":
-    test_no_call_sv_compile()
+    test_function_import()
