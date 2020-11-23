@@ -11,7 +11,7 @@ class DataType(enum.Enum):
     UShortInt = "shortint unsigned"
     UInt = "int unsigned"
     ULongInt = "longint unsigned"
-    CHandle = "chandle"
+    Object = "chandle"
     String = "string"
     # only for return type
     Void = "void"

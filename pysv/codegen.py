@@ -181,7 +181,7 @@ def get_c_type_str(data_type: DataType):  # pragma: no cover
         return "uint32_t"
     elif data_type == DataType.ULongInt:
         return "uint64_t"
-    elif data_type == DataType.CHandle:
+    elif data_type == DataType.Object:
         return "void*"
     elif data_type == DataType.String:
         return "const char*"
@@ -309,7 +309,7 @@ def generate_return_value(func_def: Union[Function, DPIFunctionCall]):
         # special care for string
         result += __INDENTATION + '{0} = locals["__result"].cast<std::string>();\n'.format(__GLOBAL_STRING_VAR_NAME)
         result += __INDENTATION + "return {0}.c_str();\n".format(__GLOBAL_STRING_VAR_NAME)
-    elif return_type == DataType.CHandle:
+    elif return_type == DataType.Object:
         # need to call the cxx function
         result += __INDENTATION + "return create_class_func(locals);\n"
     else:

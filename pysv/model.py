@@ -12,11 +12,11 @@ def get_dpi_functions(cls: type):
             # set init as well
             if attr == cls.__init__:
                 # return type is c_handle
-                attr.func_def.return_type = DataType.CHandle
+                attr.func_def.return_type = DataType.Object
             else:
                 # normal function call
                 # set the first argument to be chandle
-                attr.func_def.arg_types[attr.func_def.arg_names[0]] = DataType.CHandle
+                attr.func_def.arg_types[attr.func_def.arg_names[0]] = DataType.Object
     return result
 
 
@@ -42,7 +42,7 @@ self is required to have @sv decorator"""
         func_def.imports = imports
         func_def.parent_class = cls
         call = func_def(ctor)
-        func_def.arg_types[func_def.arg_names[0]] = DataType.CHandle
+        func_def.arg_types[func_def.arg_names[0]] = DataType.Object
 
         cls.__init__ = call
 
@@ -72,6 +72,6 @@ def inject_destructor(cls: type):
     func_def.imports = {}
     func_def.parent_class = cls
     call = func_def(destroy)
-    func_def.arg_types[func_def.arg_names[0]] = DataType.CHandle
+    func_def.arg_types[func_def.arg_names[0]] = DataType.Object
 
     setattr(cls, "destroy", call)

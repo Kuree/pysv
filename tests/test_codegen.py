@@ -5,7 +5,7 @@ from pysv.codegen import (get_python_src, generate_cxx_function, generate_c_head
 
 
 def test_get_dpi_definition():
-    @sv(a=DataType.String, b=DataType.Byte, return_type=DataType.CHandle)
+    @sv(a=DataType.String, b=DataType.Byte, return_type=DataType.Object)
     def func(a, b):
         return a + b
 
