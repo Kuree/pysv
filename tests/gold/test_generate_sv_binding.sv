@@ -9,8 +9,10 @@ import "DPI-C" function void SomeClass_print_a(input chandle self);
 import "DPI-C" function void SomeClass_print_b(input chandle self,
                                                input int num);
 import "DPI-C" function void pysv_finalize();
-class SomeClass;
-  local chandle pysv_ptr;
+virtual class PySVObject;
+chandle pysv_ptr;
+endclass
+class SomeClass extends PySVObject;
   function new();
     pysv_ptr = SomeClass_pysv_init();
   endfunction

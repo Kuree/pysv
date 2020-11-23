@@ -14,6 +14,8 @@ __SYS_PATH_FUNC_NAME = "check_sys_path"
 __CHECK_INTERPRETER = "check_interpreter"
 __PYTHON_LIBRARY = "PYTHON_LIBRARY"
 __IMPORT_MODULE = "import_module"
+__GET_LOCAL_OBJECT = "get_local_object"
+__PYSV_OBJECT_BASE = "PySVObject"
 
 
 def __get_code_snippet(name):
@@ -23,6 +25,20 @@ def __get_code_snippet(name):
     assert os.path.exists(filename)
     with open(filename) as f:
         return f.read() + "\n"
+
+
+def __should_include_local_object(func_defs):
+    func_defs = __get_func_defs(func_defs)
+    for func_def in func_defs:
+        func_def = __get_func_def(func_def)
+        start_idx = 0 if func_def.parent_class is None else 1
+        for idx, name in enumerate(func_def.arg_names):
+            if idx < start_idx:
+                continue
+            arg_type = func_def.arg_types[name]
+            if arg_type == DataType.Object:
+                return True
+    return False
 
 
 def generate_dpi_signature(func_def: Union[Function, DPIFunctionCall],
@@ -38,7 +54,10 @@ def generate_dpi_signature(func_def: Union[Function, DPIFunctionCall],
         if (is_class or func_def.is_init) and idx == 0:
             continue
         arg_type = func_def.arg_types[arg_name]
-        arg_type_str = arg_type.value
+        if is_class and arg_type == DataType.Object:
+            arg_type_str = __PYSV_OBJECT_BASE
+        else:
+            arg_type_str = arg_type.value
         args.append("input {0} {1}".format(arg_type_str, arg_name))
 
     if is_class:
@@ -255,7 +274,11 @@ def generate_local_variables(func_def: Union[Function, DPIFunctionCall]):
             # class constructor don't need the first self
             continue
         str_name = get_arg_name(n)
-        s = __INDENTATION + 'locals["{0}"] = {1};\n'.format(str_name, n)
+        arg_type = func_def.arg_types[n]
+        if arg_type == DataType.Object and not (idx == 0 and func_def.parent_class is not None):
+            s = __INDENTATION + __GET_LOCAL_OBJECT + '("{0}", {1}, locals);\n'.format(str_name, n)
+        else:
+            s = __INDENTATION + 'locals["{0}"] = {1};\n'.format(str_name, n)
         result += s
     result += '\n'
     return result
@@ -353,7 +376,8 @@ def generate_sys_path_values(pretty_print=True):
     return result
 
 
-def generate_bootstrap_code(pretty_print=True, add_sys_path=True, add_class=True, add_imports=True):
+def generate_bootstrap_code(pretty_print=True, add_sys_path=True, add_class=True, add_imports=True,
+                            add_local_object=True):
     result = __get_code_snippet("include_header.hh")
     result += __get_code_snippet("runtime_values.cc")
 
@@ -368,6 +392,8 @@ def generate_bootstrap_code(pretty_print=True, add_sys_path=True, add_class=True
         result += __get_code_snippet("create_class_func.cc")
     if add_imports:
         result += __get_code_snippet("import_global.cc")
+    if add_local_object:
+        result += __get_code_snippet("get_local_object.cc")
 
     return result
 
@@ -389,19 +415,21 @@ def generate_runtime_finalize(pretty_print):
 
 def generate_pybind_code(func_defs: List[Union[type, DPIFunctionCall]], pretty_print: bool = True,
                          namespace: str = "pysv", add_sys_path: bool = False):
-    add_class = should_add_class(func_defs)
-    if not add_sys_path:
-        add_sys_path = should_add_sys_path(func_defs)
-    add_imports = __has_imports(func_defs)
-    result = generate_bootstrap_code(pretty_print, add_sys_path=add_sys_path, add_class=add_class,
-                                     add_imports=add_imports) + "\n"
-    # generate extern C block
-    result += 'extern "C" {\n'
-    code_blocks = []
     # initialize the check the classes
     __initialize_class_defs(func_defs)
     # remove unnecessary entries
     func_defs = make_unique_func_defs(func_defs)
+
+    add_class = should_add_class(func_defs)
+    if not add_sys_path:
+        add_sys_path = should_add_sys_path(func_defs)
+    add_imports = __has_imports(func_defs)
+    add_local_object = __should_include_local_object(func_defs)
+    result = generate_bootstrap_code(pretty_print, add_sys_path=add_sys_path, add_class=add_class,
+                                     add_imports=add_imports, add_local_object=add_local_object) + "\n"
+    # generate extern C block
+    result += 'extern "C" {\n'
+    code_blocks = []
 
     new_defs = __get_func_defs(func_defs)
     for func_def in new_defs:
@@ -449,15 +477,21 @@ def generate_sv_class(func_def, pretty_print: bool = True):
     assert cls is not None
     class_name = cls.__name__
     funcs = get_dpi_functions(cls)
-    result += "class {0};\n".format(class_name)
-    # a local chandle
+    result += "class {0} extends {1};\n".format(class_name, __PYSV_OBJECT_BASE)
+    # use protected chandle from the base class
     chandle_name = "pysv_ptr"
-    result += __INDENTATION + "local chandle {0};\n".format(chandle_name)
     for func in funcs:
         sig = generate_dpi_signature(func, pretty_print=pretty_print, is_class=True)
         result += __INDENTATION + sig + "\n"
         # generate the call
-        args = [chandle_name] + func.func_def.arg_names[1:]
+        arg_names = []
+        for arg_name in func.func_def.arg_names[1:]:
+            arg_type = func.func_def.arg_types[arg_name]
+            if arg_type == DataType.Object:
+                arg_names.append("{0}.{1}".format(arg_name, chandle_name))
+            else:
+                arg_names.append(arg_name)
+        args = [chandle_name] + arg_names
         if func.func_def.is_init:
             # don't need to first self
             args = args[1:]
@@ -496,9 +530,13 @@ def generate_sv_binding(func_defs: List[Union[type, DPIFunctionCall]], pkg_name=
     result += generate_dpi_definitions(func_defs, pretty_print)
 
     # generate class definition
-    for func_def in func_defs:
-        if type(func_def) == type:
-            result += generate_sv_class(func_def, pretty_print)
+    # test if we need to generate class
+    has_class = should_add_class(func_defs)
+    if has_class:
+        result += __get_code_snippet("pysv_object_base.sv")
+        for func_def in func_defs:
+            if type(func_def) == type:
+                result += generate_sv_class(func_def, pretty_print)
 
     # end of package
     result += "endpackage\n"

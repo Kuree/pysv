@@ -92,8 +92,33 @@ def test_tensorflow(get_vector_filename):
         tester.run()
 
 
+def test_class_input(get_vector_filename):
+    class ClassA:
+        @sv()
+        def __init__(self, value):
+            self.num = value
+
+    class ClassB:
+        @sv(a=DataType.Object)
+        def __init__(self, a):
+            self.a = a
+
+        @sv(a=DataType.Object)
+        def add(self, a):
+            return self.a.num + a.num
+
+    with tempfile.TemporaryDirectory() as temp:
+        lib_path = compile_lib([ClassA, ClassB], cwd=temp)
+        sv_pkg = os.path.join(os.path.abspath(temp), "pysv_pkg.sv")
+        generate_sv_binding([ClassA, ClassB], filename=sv_pkg)
+        tb_tile = get_vector_filename("test_class_input.sv")
+
+        tester = pysv.util.XceliumTester(lib_path, sv_pkg, tb_tile, cwd=temp)
+        tester.run()
+
+
 if __name__ == "__main__":
     from conftest import get_vector_filename_fn
-    test_tensorflow(get_vector_filename_fn)
+    test_class_input(get_vector_filename_fn)
 
 
