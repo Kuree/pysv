@@ -111,7 +111,8 @@ def test_function_import():
         call_str = rand_.make_call().str() + ";\n"
         value = compile_and_run(lib_file, call_str, temp, [rand_])
         value = int(value)
-        assert value in range(0, 42)
+        # randint is [a, b]
+        assert value in range(0, 42 + 1)
 
 
 if __name__ == "__main__":
