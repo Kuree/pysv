@@ -115,5 +115,34 @@ def test_function_import():
         assert value in range(0, 42 + 1)
 
 
+def test_cxx_object_input():
+    class ClassA:
+        @sv()
+        def __init__(self):
+            self.num = 21
+
+    class ClassB:
+        @sv(a=DataType.Object)
+        def __init__(self, a):
+            self.a = a
+
+        @sv(a=DataType.Object)
+        def add(self, a):
+            return self.a.num + a.num
+
+    with tempfile.TemporaryDirectory() as temp:
+        temp = "temp"
+        lib_file = compile_lib([ClassA, ClassB], cwd=temp)
+        cxx_code = """
+using namespace pysv;
+ClassA a;
+ClassB b(&a);
+std::cout << b.add(&a);
+        """
+        value = compile_and_run(lib_file, cxx_code, temp, [ClassA, ClassB], use_implementation=True)
+        value = int(value)
+        print(value)
+
+
 if __name__ == "__main__":
-    test_function_import()
+    test_cxx_object_input()

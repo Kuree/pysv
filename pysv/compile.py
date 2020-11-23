@@ -1,4 +1,4 @@
-from .codegen import generate_pybind_code, generate_c_headers
+from .codegen import generate_pybind_code, generate_c_headers, generate_cxx_binding
 import subprocess
 import os
 import shutil
@@ -92,9 +92,12 @@ def __get_cxx_compiler():   # pragma: no cover
         raise ValueError("Unable to find C++ compiler")
 
 
-def compile_and_run(lib_path, cxx_content, cwd, func_defs, extra_headers=""):
+def compile_and_run(lib_path, cxx_content, cwd, func_defs, extra_headers="", use_implementation=False):
     """Used for testing or simple C++ code. Returns captured stdout"""
-    headers = generate_c_headers(func_defs)
+    if use_implementation:
+        headers = generate_cxx_binding(func_defs)
+    else:
+        headers = generate_c_headers(func_defs)
     headers += "\n" + extra_headers + "\n"
     # write out the file
     filename = os.path.join(cwd, "test_cxx.cc")

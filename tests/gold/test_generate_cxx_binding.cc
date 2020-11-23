@@ -12,12 +12,15 @@ void SomeClass_print_b(void* self,
 void pysv_finalize();
 }
 namespace pysv {
-class SomeClass {
-private:
-  void *pysv_ptr;
+class PySVObject {
+public:
+  void *pysv_ptr = nullptr;
+  virtual ~PySVObject() = default;
+};
+class SomeClass : public PySVObject {
 public:
   SomeClass();
-  ~SomeClass();
+  ~SomeClass() override;
   int32_t plus(int32_t num);
   void print_a();
   void print_b(int32_t num);

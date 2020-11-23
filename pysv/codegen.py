@@ -16,6 +16,7 @@ __PYTHON_LIBRARY = "PYTHON_LIBRARY"
 __IMPORT_MODULE = "import_module"
 __GET_LOCAL_OBJECT = "get_local_object"
 __PYSV_OBJECT_BASE = "PySVObject"
+__PYSV_DESTROY = "destroy"
 
 
 def __get_code_snippet(name):
@@ -225,7 +226,7 @@ def get_c_function_signature(func_def: Union[Function, DPIFunctionCall], pretty_
             return_type = ""
         else:
             # special case for destructor
-            if func_def.base_name == "destroy":
+            if func_def.base_name == __PYSV_DESTROY:
                 func_name = "~" + class_name
                 return_type = ""
             else:
@@ -250,7 +251,10 @@ def get_c_function_signature(func_def: Union[Function, DPIFunctionCall], pretty_
             # class constructor don't need the first self
             continue
         t = func_def.arg_types[name]
-        t_str = get_c_type_str(t)
+        if is_class and t == DataType.Object:
+            t_str = __PYSV_OBJECT_BASE + "*"
+        else:
+            t_str = get_c_type_str(t)
         args.append("{0} {1}".format(t_str, name))
     arg_str = padding.join(args)
     result = "{0}{1})".format(result, arg_str)
@@ -471,6 +475,18 @@ def generate_c_headers(func_defs, pretty_print: bool = True):
     return result
 
 
+def __get_function_call_args(func, ptr_name, is_sv=True):
+    arg_names = []
+    for arg_name in func.func_def.arg_names[1:]:
+        arg_type = func.func_def.arg_types[arg_name]
+        if arg_type == DataType.Object:
+            access = "." if is_sv else "->"
+            arg_names.append("{0}{1}{2}".format(arg_name, access, ptr_name))
+        else:
+            arg_names.append(arg_name)
+    return arg_names
+
+
 def generate_sv_class(func_def, pretty_print: bool = True):
     result = ""
     cls = func_def
@@ -484,13 +500,7 @@ def generate_sv_class(func_def, pretty_print: bool = True):
         sig = generate_dpi_signature(func, pretty_print=pretty_print, is_class=True)
         result += __INDENTATION + sig + "\n"
         # generate the call
-        arg_names = []
-        for arg_name in func.func_def.arg_names[1:]:
-            arg_type = func.func_def.arg_types[arg_name]
-            if arg_type == DataType.Object:
-                arg_names.append("{0}.{1}".format(arg_name, chandle_name))
-            else:
-                arg_names.append(arg_name)
+        arg_names = __get_function_call_args(func, chandle_name)
         args = [chandle_name] + arg_names
         if func.func_def.is_init:
             # don't need to first self
@@ -555,20 +565,21 @@ def generate_cxx_class(cls, pretty_print: bool = True, include_implementation: b
     result = ""
     assert cls is not None
     class_name = cls.__name__
-    result += "class {0} {{\n".format(class_name)
+    result += "class {0} : public {1} {{\n".format(class_name, __PYSV_OBJECT_BASE)
 
     # a local pointer
     pointer_name = "pysv_ptr"
-
-    result += "private:\n"
-    result += __INDENTATION + "void *{0};\n".format(pointer_name)
 
     result += "public:\n"
     # generating methods
     func_defs = get_dpi_functions(cls)
     for func in func_defs:
-        result += __INDENTATION + get_c_function_signature(func, pretty_print, include_attribute=include_implementation,
-                                                           is_class=True, class_name=class_name) + ";\n"
+        sig = get_c_function_signature(func, pretty_print, include_attribute=include_implementation,
+                                       is_class=True, class_name=class_name)
+        if func.func_def.base_name == __PYSV_DESTROY:
+            sig += " override"
+
+        result += __INDENTATION + sig + ";\n"
 
     result += "};\n"
 
@@ -584,7 +595,8 @@ def generate_cxx_class(cls, pretty_print: bool = True, include_implementation: b
             # call the wrapper function
             func_name = func.func_def.func_name
             # generate the call
-            args = [pointer_name] + func.func_def.arg_names[1:]
+            arg_names = __get_function_call_args(func, pointer_name, is_sv=False)
+            args = [pointer_name] + arg_names
             if func.func_def.is_init:
                 args = args[1:]
             args = "{0}({1});".format(func_name, ", ".join(args))
@@ -628,9 +640,12 @@ def generate_cxx_binding(func_defs: List[Union[type, DPIFunctionCall]], pretty_p
     result += "namespace {0} {{\n".format(namespace)
 
     # generate c++ classes
-    for func_def in func_defs:
-        if type(func_def) == type:
-            result += generate_cxx_class(func_def, pretty_print, include_implementation)
+    add_class = should_add_class(func_defs)
+    if add_class:
+        result += __get_code_snippet("cxx_object_base.cc")
+        for func_def in func_defs:
+            if type(func_def) == type:
+                result += generate_cxx_class(func_def, pretty_print, include_implementation)
 
     # end of namespace
     result += "}\n"
