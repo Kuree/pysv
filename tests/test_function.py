@@ -108,5 +108,13 @@ def test_explicit_import():
     assert len(foo.func_def.imports) == 1
 
 
+def test_no_call_sv():
+    @sv
+    def foo():
+        pass
+
+    assert isinstance(foo, sv)
+
+
 if __name__ == "__main__":
-    test_explicit_import()
+    test_no_call_sv()

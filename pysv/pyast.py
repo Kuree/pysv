@@ -2,6 +2,7 @@ import ast
 import astor
 import inspect
 import textwrap
+import typing
 
 
 class __HasDPIVisitor(ast.NodeVisitor):
@@ -28,7 +29,7 @@ def has_sv_deco(node):
     return visitor.result
 
 
-def has_return(func: type):
+def has_return(func: typing.Callable):
     fn_src = inspect.getsource(func)
     func_tree = ast.parse(textwrap.dedent(fn_src))
     fn_body = func_tree.body[0]

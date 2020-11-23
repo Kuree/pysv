@@ -33,7 +33,11 @@ def should_add_sys_path(func_defs):
             if ext == ".py":
                 modules.add(name)
     for func in defs:
-        for module_name in func.func_def.imports.values():
+        if hasattr(func, "func_def"):
+            func_def = func.func_def
+        else:
+            func_def = func
+        for module_name in func_def.imports.values():
             if module_name not in modules and module_name != "pysv":
                 return True
     return False
@@ -55,8 +59,10 @@ def make_unique_func_defs(func_defs):
                 result.append(func_def)
                 classes.append(func_def)
         else:
-            if func_def.func_def.parent_class is not None:
-                cls = func_def.func_def.parent_class
+            if hasattr(func_def, "func_def"):
+                func_def = func_def.func_def
+            if func_def.parent_class is not None:
+                cls = func_def.parent_class
                 if cls not in classes:
                     classes.append(cls)
                     result.append(cls)

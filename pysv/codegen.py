@@ -110,7 +110,6 @@ def __get_func_defs(func_defs):
             for f in funcs:
                 new_defs.append(f)
         else:
-            assert isinstance(func, DPIFunctionCall)
             new_defs.append(func)
     return new_defs
 
@@ -132,7 +131,8 @@ def __has_imports(func_defs):
                 if len(f.func_def.imports) > 0:
                     return True
         else:
-            if len(func.func_def.imports) > 0:
+            func_def = __get_func_def(func)
+            if len(func_def.imports) > 0:
                 return True
     return False
 

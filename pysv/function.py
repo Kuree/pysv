@@ -47,8 +47,13 @@ class Function:
 class DPIFunction(Function):
     def __init__(self, return_type: DataType = DataType.Int, imports=None, **arg_types):
         super().__init__()
-        self.return_type = return_type
-        assert isinstance(self.return_type, DataType), "Return type has to be of " + DataType.__name__
+        self.func = None
+        if callable(return_type):
+            # someone didn't use preferred (). luckily we still support it
+            self.__call__(return_type)
+        else:
+            self.return_type = return_type
+            assert isinstance(self.return_type, DataType), "Return type has to be of " + DataType.__name__
         if imports is None:
             self.imports = _inspect_frame()
         else:
@@ -57,8 +62,6 @@ class DPIFunction(Function):
                 val_name = _get_import_name(val, False)
                 assert val_name is not None, "Unable to import {0}".format(val)
                 self.imports[name] = val_name
-
-        self.func = None
 
         # check arg types
         for t in arg_types.values():

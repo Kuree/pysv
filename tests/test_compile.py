@@ -1,4 +1,4 @@
-from pysv import compile_lib, sv, DataType, set_run_function
+from pysv import compile_lib, sv, DataType
 import os
 import tempfile
 from pysv.compile import compile_and_run
@@ -86,5 +86,18 @@ def test_type_import():
         assert value == expected
 
 
+def test_no_call_sv_compile():
+    from pysv.codegen import generate_cxx_binding, generate_sv_binding
+
+    @sv
+    def foo():
+        pass
+
+    with tempfile.TemporaryDirectory() as temp:
+        compile_lib([foo], cwd=temp)
+        generate_cxx_binding([foo], filename=os.path.join(temp, "test.hh"))
+        generate_sv_binding([foo], filename=os.path.join(temp, "test.svh"))
+
+
 if __name__ == "__main__":
-    test_type_import()
+    test_no_call_sv_compile()
