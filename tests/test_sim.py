@@ -92,6 +92,7 @@ def test_tensorflow(get_vector_filename):
         tester.run()
 
 
+@pytest.mark.skipif(not pysv.util.is_xcelium_available(), reason="Xcelium not available")
 def test_class_input(get_vector_filename):
     class ClassA:
         @sv()
