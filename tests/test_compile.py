@@ -115,7 +115,7 @@ def test_function_import():
         assert value in range(0, 42 + 1)
 
 
-def test_cxx_object_input():
+def test_cxx_object_funcs():
     class ClassA:
         @sv()
         def __init__(self):
@@ -126,6 +126,12 @@ def test_cxx_object_input():
         def __init__(self, a):
             self.a = a
 
+        @sv(return_type=DataType.Object)
+        def create_a(self, num):
+            a = ClassA()
+            a.num = num
+            return a
+
         @sv(a=DataType.Object)
         def add(self, a):
             return self.a.num + a.num
@@ -134,15 +140,17 @@ def test_cxx_object_input():
         lib_file = compile_lib([ClassA, ClassB], cwd=temp)
         cxx_code = """
 using namespace pysv;
-ClassA a;
-ClassB b(&a);
-std::cout << b.add(&a);
+ClassA a1;
+ClassB b(&a1);
+auto a2 = b.create_a(-42);
+std::cout << b.add(&a1) << std::endl;
+std::cout << b.add(&a2);
 pysv_finalize();
         """
-        value = compile_and_run(lib_file, cxx_code, temp, [ClassA, ClassB], use_implementation=True)
-        value = int(value)
-        print(value)
+        values = compile_and_run(lib_file, cxx_code, temp, [ClassA, ClassB], use_implementation=True).split("\n")
+        assert int(values[0]) == 42
+        assert int(values[1]) == (21 - 42)
 
 
 if __name__ == "__main__":
-    test_cxx_object_input()
+    test_cxx_object_funcs()

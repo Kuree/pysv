@@ -2,16 +2,18 @@ module top;
 
 import pysv::*;
 
-ClassA a1, a2;
+ClassA a1;
+PySVObject a2;
 ClassB b;
 
 initial begin
     int value;
-    a1 = new(1);
-    a2 = new(41);
+    a1 = new();
     b = new(a1);
+    a2 = b.create_a(21);
     value = b.add(a2);
     assert (value == 42);
+    pysv_finalize();
 end
 
 endmodule

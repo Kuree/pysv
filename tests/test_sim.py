@@ -92,17 +92,27 @@ def test_tensorflow(get_vector_filename):
         tester.run()
 
 
-@pytest.mark.skipif(not pysv.util.is_xcelium_available(), reason="Xcelium not available")
-def test_class_input(get_vector_filename):
+@pytest.mark.parametrize("simulator", ("xcelium", "vcs"))
+def test_sv_object_funcs(get_vector_filename, simulator):
+    avail, tester_cls = simulator_map[simulator]
+    if not avail():
+        pytest.skip(simulator + " is not available")
+
     class ClassA:
         @sv()
-        def __init__(self, value):
-            self.num = value
+        def __init__(self):
+            self.num = 21
 
     class ClassB:
         @sv(a=DataType.Object)
         def __init__(self, a):
             self.a = a
+
+        @sv(return_type=DataType.Object)
+        def create_a(self, num):
+            a = ClassA()
+            a.num = num
+            return a
 
         @sv(a=DataType.Object)
         def add(self, a):
@@ -120,6 +130,5 @@ def test_class_input(get_vector_filename):
 
 if __name__ == "__main__":
     from conftest import get_vector_filename_fn
-    test_class_input(get_vector_filename_fn)
-
+    test_sv_object_funcs(get_vector_filename_fn, "xcelium")
 

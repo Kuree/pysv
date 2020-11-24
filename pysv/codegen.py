@@ -17,6 +17,7 @@ __IMPORT_MODULE = "import_module"
 __GET_LOCAL_OBJECT = "get_local_object"
 __PYSV_OBJECT_BASE = "PySVObject"
 __PYSV_DESTROY = "destroy"
+__LOAD_CLASS_DEFS = "load_class_defs"
 
 
 def __get_code_snippet(name):
@@ -68,6 +69,8 @@ def generate_dpi_signature(func_def: Union[Function, DPIFunctionCall],
 
     if is_class and func_def.is_init:
         return_type_str = ""
+    elif is_class and func_def.return_type == DataType.Object:
+        return_type_str = __PYSV_OBJECT_BASE
     else:
         return_type_str = func_def.return_type.value
 
@@ -231,6 +234,9 @@ def get_c_function_signature(func_def: Union[Function, DPIFunctionCall], pretty_
                 return_type = ""
             else:
                 func_name = func_def.base_name
+                # return as object
+                if func_def.return_type == DataType.Object:
+                    return_type = __PYSV_OBJECT_BASE
     else:
         func_name = func_def.func_name
 
@@ -288,10 +294,12 @@ def generate_local_variables(func_def: Union[Function, DPIFunctionCall]):
     return result
 
 
-def generate_global_variables(func_def: Union[Function, DPIFunctionCall]):
+def generate_global_variables(func_def: Union[Function, DPIFunctionCall], add_class=False):
     func_def = __get_func_def(func_def)
     imports = func_def.imports
     result = __INDENTATION + "auto globals = py::dict();\n"
+    if add_class:
+        result += __INDENTATION + __LOAD_CLASS_DEFS + "(globals);\n"
     if len(imports) > 0:
         for n, m in imports.items():
             result += __INDENTATION + '{0}("{1}", "{2}", globals);\n'.format(__IMPORT_MODULE, m, n)
@@ -338,7 +346,11 @@ def generate_return_value(func_def: Union[Function, DPIFunctionCall]):
         result += __INDENTATION + "return {0}.c_str();\n".format(__GLOBAL_STRING_VAR_NAME)
     elif return_type == DataType.Object:
         # need to call the cxx function
-        result += __INDENTATION + "return create_class_func(locals);\n"
+        if func_def.is_init:
+            class_name = func_def.parent_class.__name__
+        else:
+            class_name = ""
+        result += __INDENTATION + 'return create_class_func(locals, "{0}");\n'.format(class_name)
     else:
         return_type_str = get_c_type_str(return_type)
         result += __INDENTATION + 'return locals["__result"].cast<{0}>();\n'.format(return_type_str)
@@ -350,14 +362,14 @@ def generate_check_interpreter():
 
 
 def generate_cxx_function(func_def: Union[Function, DPIFunctionCall], pretty_print: bool = True,
-                          add_sys_path: bool = True):
+                          add_sys_path: bool = True, add_class: bool = True):
     result = get_c_function_signature(func_def, pretty_print)
     result += " {\n"
     if add_sys_path:
         result += generate_sys_path_check()
     else:
         result += generate_check_interpreter()
-    result += generate_global_variables(func_def)
+    result += generate_global_variables(func_def, add_class=add_class)
     result += generate_local_variables(func_def)
     result += generate_execute_code(func_def, pretty_print)
     result += generate_return_value(func_def)
@@ -394,6 +406,7 @@ def generate_bootstrap_code(pretty_print=True, add_sys_path=True, add_class=True
     if add_class:
         result += __get_code_snippet("call_class_func.cc")
         result += __get_code_snippet("create_class_func.cc")
+        result += __get_code_snippet("load_class_defs.cc")
     if add_imports:
         result += __get_code_snippet("import_global.cc")
     if add_local_object:
@@ -437,7 +450,8 @@ def generate_pybind_code(func_defs: List[Union[type, DPIFunctionCall]], pretty_p
 
     new_defs = __get_func_defs(func_defs)
     for func_def in new_defs:
-        code_blocks.append(generate_cxx_function(func_def, pretty_print=pretty_print, add_sys_path=add_sys_path))
+        code_blocks.append(generate_cxx_function(func_def, pretty_print=pretty_print, add_sys_path=add_sys_path,
+                                                 add_class=add_class))
     result += "\n".join(code_blocks)
     result += generate_runtime_finalize(pretty_print=pretty_print)
     result += "}\n"
@@ -506,14 +520,26 @@ def generate_sv_class(func_def, pretty_print: bool = True):
             # don't need to first self
             args = args[1:]
         args = ", ".join(args)
+        # need to declare variables first
+        return_obj = False
+        if func.func_def.return_type == DataType.Object and (not func.func_def.is_init):
+            result += __INDENTATION * 2 + "chandle ptr__;\n"
+            result += __INDENTATION * 2 + __PYSV_OBJECT_BASE + " result;\n"
+            return_obj = True
         if func.func_def.is_init:
             var_assign = chandle_name + " = "
         else:
-            if func.func_def.return_type != DataType.Void:
+            if return_obj:
+                var_assign = "ptr__ = "
+            elif func.func_def.return_type != DataType.Void:
                 var_assign = "return "
             else:
                 var_assign = ""
         result += __INDENTATION * 2 + var_assign + func.func_def.func_name + "({0});\n".format(args)
+        if return_obj:
+            result += __INDENTATION * 2 + "result = new();\n"
+            result += __INDENTATION * 2 + "result." + chandle_name + " = ptr__;\n"
+            result += __INDENTATION * 2 + "return result;\n"
         result += __INDENTATION + "endfunction\n"
 
     result += "endclass\n"
@@ -605,9 +631,15 @@ def generate_cxx_class(cls, pretty_print: bool = True, include_implementation: b
                 tokens.append(pointer_name)
                 tokens.append("=")
             elif func.func_def.return_type != DataType.Void:
-                tokens.append("return")
+                if func.func_def.return_type == DataType.Object:
+                    tokens += ["auto", "ptr__", "="]
+                else:
+                    tokens.append("return")
             tokens.append(args)
             result += __INDENTATION * 2 + " ".join(tokens) + "\n"
+            # return a pyobject wrapper
+            if not func.func_def.is_init and func.func_def.return_type == DataType.Object:
+                result += __INDENTATION * 2 + "return {0}({1});\n".format(__PYSV_OBJECT_BASE, "ptr__")
             result += __INDENTATION + "}\n"
 
     return result

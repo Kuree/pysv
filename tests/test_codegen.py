@@ -39,7 +39,7 @@ def simple_func(a, b, c):
 
 
 def test_generate_cxx_function(check_file):
-    result = generate_cxx_function(simple_func, add_sys_path=False)
+    result = generate_cxx_function(simple_func, add_sys_path=False, add_class=False)
     check_file(result, "test_generate_cxx_function.cc")
 
 

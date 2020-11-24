@@ -13,6 +13,7 @@ namespace py = pybind11;
 std::unique_ptr<std::unordered_map<std::string, py::object>> global_imports = nullptr;
 std::unique_ptr<py::scoped_interpreter> guard = nullptr;
 std::unique_ptr<std::unordered_map<void*, py::object>> py_obj_map;
+std::unique_ptr<py::dict> class_defs;
 std::string string_result_value;
 
 void check_interpreter() {
@@ -43,6 +44,8 @@ __attribute__((visibility("default"))) void pysv_finalize() {
     global_imports.reset();
     // clear the object map
     py_obj_map.reset();
+    // clear the class map
+    class_defs.reset();
     // the last part is tear down the runtime
     guard.reset();
 }
