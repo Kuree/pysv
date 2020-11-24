@@ -122,7 +122,7 @@ def test_sv_object_funcs(get_vector_filename, simulator):
         lib_path = compile_lib([ClassA, ClassB], cwd=temp)
         sv_pkg = os.path.join(os.path.abspath(temp), "pysv_pkg.sv")
         generate_sv_binding([ClassA, ClassB], filename=sv_pkg)
-        tb_tile = get_vector_filename("test_class_input.sv")
+        tb_tile = get_vector_filename("test_sv_object_funcs.sv")
 
         tester = pysv.util.XceliumTester(lib_path, sv_pkg, tb_tile, cwd=temp)
         tester.run()
