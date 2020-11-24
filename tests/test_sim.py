@@ -104,17 +104,18 @@ def test_sv_object_funcs(get_vector_filename, simulator):
             self.num = 21
 
     class ClassB:
+        # object is allowed if you want duct typing
         @sv(a=DataType.Object)
         def __init__(self, a):
             self.a = a
 
-        @sv(return_type=DataType.Object)
+        @sv(return_type=ClassA)
         def create_a(self, num):
             a = ClassA()
             a.num = num
             return a
 
-        @sv(a=DataType.Object)
+        @sv(a=ClassA)
         def add(self, a):
             return self.a.num + a.num
 

@@ -2,8 +2,7 @@ module top;
 
 import pysv::*;
 
-ClassA a1;
-PySVObject a2;
+ClassA a1, a2;
 ClassB b;
 
 initial begin

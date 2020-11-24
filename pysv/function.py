@@ -29,6 +29,10 @@ class Function:
         # only used for init function
         self.is_init = False
 
+        # for class reference in args and return type
+        self.arg_obj_ref = {}
+        self.return_obj_ref = None
+
     @abc.abstractmethod
     def get_func_src(self):
         pass
@@ -45,14 +49,15 @@ class Function:
 
 
 class DPIFunction(Function):
-    def __init__(self, return_type: DataType = DataType.Int, imports=None, **arg_types):
+    def __init__(self, return_type: Union[DataType, type] = DataType.Int, imports=None, **arg_types):
         super().__init__()
         self.func = None
-        if callable(return_type):
+        if not isinstance(return_type, DataType) and not isinstance(return_type, type):
             # someone didn't use preferred (). luckily we still support it
+            assert hasattr(return_type, "__name__"), "Function does not have __name__"
             self.__call__(return_type)
         else:
-            self.return_type = return_type
+            self.return_type = self.__check_arg_type("", return_type)
             assert isinstance(self.return_type, DataType), "Return type has to be of " + DataType.__name__
         if imports is None:
             self.imports = _inspect_frame()
@@ -65,8 +70,11 @@ class DPIFunction(Function):
 
         # check arg types
         for t in arg_types.values():
-            assert isinstance(t, DataType)
-        self.arg_types = arg_types
+            assert isinstance(t, (DataType, type))
+        self.arg_types = {}
+        for name, t in arg_types.items():
+            t = self.__check_arg_type(name, t)
+            self.arg_types[name] = t
         for t in self.arg_types.values():
             assert isinstance(t, DataType)
             assert t != DataType.Void, str(DataType.Void) + " can only used as return type"
@@ -96,6 +104,15 @@ class DPIFunction(Function):
             self.return_type = DataType.Void
 
         return DPIFunctionCall(self)
+
+    def __check_arg_type(self, arg_name, arg_type):
+        if isinstance(arg_type, type):
+            if arg_name:
+                self.arg_obj_ref[arg_name] = arg_type
+            else:
+                self.return_obj_ref = arg_type
+            arg_type = DataType.Object
+        return arg_type
 
     def get_func_src(self):
         # get the content of the function as str

@@ -44,7 +44,7 @@ def __should_include_local_object(func_defs):
 
 
 def generate_dpi_signature(func_def: Union[Function, DPIFunctionCall],
-                           pretty_print=True, is_class=False):
+                           pretty_print=True, is_class=False, ref_ctor_name=""):
     if isinstance(func_def, DPIFunctionCall):
         func_def = func_def.func_def
     assert isinstance(func_def, Function), "Only " + Function.__name__ + " allowed"
@@ -57,10 +57,17 @@ def generate_dpi_signature(func_def: Union[Function, DPIFunctionCall],
             continue
         arg_type = func_def.arg_types[arg_name]
         if is_class and arg_type == DataType.Object:
-            arg_type_str = __PYSV_OBJECT_BASE
+            if arg_name in func_def.arg_obj_ref:
+                arg_type_str = func_def.arg_obj_ref[arg_name].__name__
+            else:
+                arg_type_str = __PYSV_OBJECT_BASE
         else:
             arg_type_str = arg_type.value
         args.append("input {0} {1}".format(arg_type_str, arg_name))
+
+    # additional signature for ref ctor
+    if is_class and len(ref_ctor_name) > 0 and func_def.is_init:
+        args.append("input chandle {0}=null".format(ref_ctor_name))
 
     if is_class:
         dpi_str = "function"
@@ -70,7 +77,10 @@ def generate_dpi_signature(func_def: Union[Function, DPIFunctionCall],
     if is_class and func_def.is_init:
         return_type_str = ""
     elif is_class and func_def.return_type == DataType.Object:
-        return_type_str = __PYSV_OBJECT_BASE
+        if func_def.return_obj_ref is not None:
+            return_type_str = func_def.return_obj_ref.__name__
+        else:
+            return_type_str = __PYSV_OBJECT_BASE
     else:
         return_type_str = func_def.return_type.value
 
@@ -85,6 +95,8 @@ def generate_dpi_signature(func_def: Union[Function, DPIFunctionCall],
     result = " ".join([s for s in [dpi_str, return_type_str, func_name] if s])
     if pretty_print:
         padding = ",\n" + len(result) * " "
+        if is_class:
+            padding += __INDENTATION
     else:
         padding = ", "
     arg_str = padding.join(args)
@@ -158,6 +170,22 @@ def __has_imports(func_defs):
             if len(func_def.imports) > 0:
                 return True
     return False
+
+
+def __get_forwarded_types(func_defs):
+    result = []
+    new_func_defs = __get_func_defs(func_defs)
+    for func_def in new_func_defs:
+        cls_list = []
+        if func_def.func_def.return_obj_ref is not None:
+            cls_list.append(func_def.func_def.return_obj_ref)
+        for t in func_def.func_def.arg_obj_ref.values():
+            cls_list.append(t)
+        for t in cls_list:
+            assert t in func_defs, "sv class reference ({0}) as to be in the generate list".format(t.__name__)
+            if t not in result:
+                result.append(t)
+    return result
 
 
 def get_python_src(func_def: Union[Function, DPIFunctionCall]):
@@ -430,6 +458,14 @@ def generate_runtime_finalize(pretty_print):
     return result
 
 
+def generate_forward_sv_class_definition(class_refs):
+    result = ""
+    for cls in class_refs:
+        result += "typedef class {0};\n".format(cls.__name__)
+
+    return result
+
+
 def generate_pybind_code(func_defs: List[Union[type, DPIFunctionCall]], pretty_print: bool = True,
                          namespace: str = "pysv", add_sys_path: bool = False):
     # initialize the check the classes
@@ -501,7 +537,22 @@ def __get_function_call_args(func, ptr_name, is_sv=True):
     return arg_names
 
 
-def generate_sv_class(func_def, pretty_print: bool = True):
+def __get_init_call_dummy_args(func_def):
+    func_def = __get_func_def(func_def)
+    arg_types = func_def.arg_types
+    result = []
+    for name in func_def.arg_names[1:]:
+        t = arg_types[name]
+        if t == DataType.String:
+            result.append('""')
+        elif t == DataType.Object:
+            result.append("null")
+        else:
+            result.append("0")
+    return result
+
+
+def generate_sv_class(func_def, pretty_print: bool = True, ref_ctor: bool = False):
     result = ""
     cls = func_def
     assert cls is not None
@@ -510,8 +561,10 @@ def generate_sv_class(func_def, pretty_print: bool = True):
     result += "class {0} extends {1};\n".format(class_name, __PYSV_OBJECT_BASE)
     # use protected chandle from the base class
     chandle_name = "pysv_ptr"
+    class_ref_ctor_name = "ptr"
     for func in funcs:
-        sig = generate_dpi_signature(func, pretty_print=pretty_print, is_class=True)
+        ref_ctor_name = class_ref_ctor_name if ref_ctor else ""
+        sig = generate_dpi_signature(func, pretty_print=pretty_print, is_class=True, ref_ctor_name=ref_ctor_name)
         result += __INDENTATION + sig + "\n"
         # generate the call
         arg_names = __get_function_call_args(func, chandle_name)
@@ -521,25 +574,47 @@ def generate_sv_class(func_def, pretty_print: bool = True):
             args = args[1:]
         args = ", ".join(args)
         # need to declare variables first
-        return_obj = False
-        if func.func_def.return_type == DataType.Object and (not func.func_def.is_init):
-            result += __INDENTATION * 2 + "chandle ptr__;\n"
-            result += __INDENTATION * 2 + __PYSV_OBJECT_BASE + " result;\n"
-            return_obj = True
         if func.func_def.is_init:
-            var_assign = chandle_name + " = "
-        else:
-            if return_obj:
-                var_assign = "ptr__ = "
-            elif func.func_def.return_type != DataType.Void:
-                var_assign = "return "
+            # this is the constructor
+            if ref_ctor:
+                # special case to call constructor differently
+                # need to generate an if statement
+                result += """{0}{0}if ({1} == null) begin
+{0}{0}{0}{2} = {3}({4});
+{0}{0}end
+{0}{0}else begin
+{0}{0}{0}{2} = {1};
+{0}{0}end\n""".format(__INDENTATION, class_ref_ctor_name, chandle_name, func.func_def.func_name, args)
             else:
-                var_assign = ""
-        result += __INDENTATION * 2 + var_assign + func.func_def.func_name + "({0});\n".format(args)
-        if return_obj:
-            result += __INDENTATION * 2 + "result = new();\n"
-            result += __INDENTATION * 2 + "result." + chandle_name + " = ptr__;\n"
-            result += __INDENTATION * 2 + "return result;\n"
+                # normal function call
+                result += __INDENTATION * 2 + "{0} = {1}({2});\n".format(chandle_name, func.func_def.func_name, args)
+        else:
+            if func.func_def.return_type == DataType.Object and (not func.func_def.is_init):
+                if func.func_def.return_obj_ref is not None:
+                    # we are actually creating this one
+                    init_func = func.func_def.return_obj_ref.__init__
+                    init_args = __get_init_call_dummy_args(init_func)
+                    # generate code
+                    result += __INDENTATION * 2 + "chandle {0};\n".format(class_ref_ctor_name)
+                    result += __INDENTATION * 2 + "{0} ptr__;\n".format(func.func_def.return_obj_ref.__name__)
+                    result += __INDENTATION * 2 + "{0} = {1}({2});\n".format(class_ref_ctor_name,
+                                                                             func.func_def.func_name, args)
+                    init_args.append(class_ref_ctor_name)
+                    result += __INDENTATION * 2 + "ptr__ = new({0});\n".format(", ".join(init_args))
+                    result += __INDENTATION * 2 + "return ptr__;\n"
+                else:
+                    # return normal PySVObject instead
+                    result += __INDENTATION * 2 + "{0} obj__;\n".format(__PYSV_OBJECT_BASE)
+                    result += __INDENTATION * 2 + "chandle ptr__;\n"
+                    result += __INDENTATION * 2 + "ptr__ = {0}({1});\n".format(func.func_def.func_name, args)
+                    result += __INDENTATION * 2 + "obj__ = new();\n"
+                    result += __INDENTATION * 2 + "obj__.{0} = ptr__;\n".format(chandle_name)
+                    result += __INDENTATION * 2 + "return obj__;\n"
+            else:
+                if func.func_def.return_type == DataType.Void:
+                    result += __INDENTATION * 2 + "{0}({1});\n".format(func.func_def.func_name, args)
+                else:
+                    result += __INDENTATION * 2 + "return {0}({1});\n".format(func.func_def.func_name, args)
         result += __INDENTATION + "endfunction\n"
 
     result += "endclass\n"
@@ -570,9 +645,12 @@ def generate_sv_binding(func_defs: List[Union[type, DPIFunctionCall]], pkg_name=
     has_class = should_add_class(func_defs)
     if has_class:
         result += __get_code_snippet("pysv_object_base.sv")
+        class_refs = __get_forwarded_types(func_defs)
+        # need to generate forward definition if needed
+        result += generate_forward_sv_class_definition(class_refs)
         for func_def in func_defs:
             if type(func_def) == type:
-                result += generate_sv_class(func_def, pretty_print)
+                result += generate_sv_class(func_def, pretty_print, func_def in class_refs)
 
     # end of package
     result += "endpackage\n"
