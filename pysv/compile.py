@@ -3,6 +3,7 @@ import subprocess
 import os
 import shutil
 import platform
+import filecmp
 
 
 def compile_lib(func_defs, cwd, lib_name="pysv", pretty_print=True, release_build=False, clean_up_build=False,
@@ -28,7 +29,10 @@ def compile_lib(func_defs, cwd, lib_name="pysv", pretty_print=True, release_buil
         shutil.copytree(pybind_path, pybind_path_dst)
     # find the cmake file
     cmake_file = os.path.join(root_dir, "CMakeLists.txt")
-    shutil.copyfile(cmake_file, os.path.join(cwd, "CMakeLists.txt"))
+    # if cmake exists and file are the same, don't do the copying
+    dst_cmake = os.path.join(cwd, "CMakeLists.txt")
+    if not (os.path.exists(dst_cmake) and filecmp.cmp(cmake_file, dst_cmake)):
+        shutil.copyfile(cmake_file, dst_cmake)
 
     # codegen the target
     src = generate_pybind_code(func_defs, pretty_print, add_sys_path=add_sys_path)

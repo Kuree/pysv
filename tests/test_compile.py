@@ -1,71 +1,67 @@
 from pysv import compile_lib, sv, DataType
 import os
-import tempfile
 from pysv.compile import compile_and_run
 
 
-def test_compile():
+def test_compile(temp):
     @sv()
     def add(a, b):
         return a + b
-    with tempfile.TemporaryDirectory() as temp:
-        lib_file = compile_lib([add], cwd=temp)
-        assert os.path.exists(lib_file)
+
+    lib_file = compile_lib([add], cwd=temp)
+    assert os.path.exists(lib_file)
 
 
-def test_str():
+def test_str(temp):
     @sv(s=DataType.String, return_type=DataType.String)
     def mul_str(num, s):
         return num * s
 
-    with tempfile.TemporaryDirectory() as temp:
-        lib_file = compile_lib([mul_str], cwd=temp)
-        code = """
-        const char *str = "test ";
-        int32_t repeat = 4;
-        auto r1 = mul_str(repeat, str);
-        std::cout << r1 << std::endl;
-        // another call
-        auto r2 = mul_str(repeat + 1, str);
-        std::cout << r2;
-        """
+    lib_file = compile_lib([mul_str], cwd=temp)
+    code = """
+    const char *str = "test ";
+    int32_t repeat = 4;
+    auto r1 = mul_str(repeat, str);
+    std::cout << r1 << std::endl;
+    // another call
+    auto r2 = mul_str(repeat + 1, str);
+    std::cout << r2;
+    """
 
-        outputs = compile_and_run(lib_file, code, temp, [mul_str])
-        outputs = outputs.splitlines()
-        assert outputs[0] == "test " * 4
-        assert outputs[1] == "test " * (4 + 1)
+    outputs = compile_and_run(lib_file, code, temp, [mul_str])
+    outputs = outputs.splitlines()
+    assert outputs[0] == "test " * 4
+    assert outputs[1] == "test " * (4 + 1)
 
 
-def test_numpy():
+def test_numpy(temp):
     import numpy as np
 
     @sv()
     def min_(a, b):
         return np.min([a, b])
 
-    with tempfile.TemporaryDirectory() as temp:
-        lib_file = compile_lib([min_], cwd=temp)
-        call_str = min_.make_call(-1, -2).str()
-        code = """
-        auto r = {0};
-        std::cout << r << std::endl;
-        """.format(call_str)
+    lib_file = compile_lib([min_], cwd=temp)
+    call_str = min_.make_call(-1, -2).str()
+    code = """
+    auto r = {0};
+    std::cout << r << std::endl;
+    """.format(call_str)
 
-        outputs = compile_and_run(lib_file, code, temp, [min_])
-        assert int(outputs) == -2
+    outputs = compile_and_run(lib_file, code, temp, [min_])
+    assert int(outputs) == -2
 
 
-def test_empty_global():
+def test_empty_global(temp):
     @sv()
     def foo():
         pass
 
     foo.func_def.imports = {}
-    with tempfile.TemporaryDirectory() as temp:
-        compile_lib([foo], cwd=temp)
+    compile_lib([foo], cwd=temp)
 
 
-def test_type_import():
+def test_type_import(temp):
     from random import Random
 
     @sv()
@@ -75,47 +71,44 @@ def test_type_import():
         val = rand.randint(0, 42)
         print(val)
 
-    with tempfile.TemporaryDirectory() as temp:
-        lib_file = compile_lib([foo], cwd=temp)
-        call_str = foo.make_call().str() + ";\n"
-        value = compile_and_run(lib_file, call_str, temp, [foo])
-        value = int(value)
-        rand = Random()
-        rand.seed(0)
-        expected = rand.randint(0, 42)
-        assert value == expected
+    lib_file = compile_lib([foo], cwd=temp)
+    call_str = foo.make_call().str() + ";\n"
+    value = compile_and_run(lib_file, call_str, temp, [foo])
+    value = int(value)
+    rand = Random()
+    rand.seed(0)
+    expected = rand.randint(0, 42)
+    assert value == expected
 
 
-def test_no_call_sv_compile():
+def test_no_call_sv_compile(temp):
     from pysv.codegen import generate_cxx_binding, generate_sv_binding
 
     @sv
     def foo():
         pass
 
-    with tempfile.TemporaryDirectory() as temp:
-        compile_lib([foo], cwd=temp)
-        generate_cxx_binding([foo], filename=os.path.join(temp, "test.hh"))
-        generate_sv_binding([foo], filename=os.path.join(temp, "test.svh"))
+    compile_lib([foo], cwd=temp)
+    generate_cxx_binding([foo], filename=os.path.join(temp, "test.hh"))
+    generate_sv_binding([foo], filename=os.path.join(temp, "test.svh"))
 
 
-def test_function_import():
+def test_function_import(temp):
     from random import randint
 
     @sv()
     def rand_():
         print(randint(0, 42))
 
-    with tempfile.TemporaryDirectory() as temp:
-        lib_file = compile_lib([rand_], cwd=temp)
-        call_str = rand_.make_call().str() + ";\n"
-        value = compile_and_run(lib_file, call_str, temp, [rand_])
-        value = int(value)
-        # randint is [a, b]
-        assert value in range(0, 42 + 1)
+    lib_file = compile_lib([rand_], cwd=temp)
+    call_str = rand_.make_call().str() + ";\n"
+    value = compile_and_run(lib_file, call_str, temp, [rand_])
+    value = int(value)
+    # randint is [a, b]
+    assert value in range(0, 42 + 1)
 
 
-def test_cxx_object_funcs():
+def test_cxx_object_funcs(temp):
     class ClassA:
         @sv()
         def __init__(self):
@@ -136,9 +129,8 @@ def test_cxx_object_funcs():
         def add(self, a):
             return self.a.num + a.num
 
-    with tempfile.TemporaryDirectory() as temp:
-        lib_file = compile_lib([ClassA, ClassB], cwd=temp)
-        cxx_code = """
+    lib_file = compile_lib([ClassA, ClassB], cwd=temp)
+    cxx_code = """
 using namespace pysv;
 ClassA a1;
 ClassB b(&a1);
@@ -147,10 +139,10 @@ std::cout << b.add(&a1) << std::endl;
 std::cout << b.add(&a2);
 pysv_finalize();
         """
-        values = compile_and_run(lib_file, cxx_code, temp, [ClassA, ClassB], use_implementation=True).split("\n")
-        assert int(values[0]) == 42
-        assert int(values[1]) == (21 - 42)
+    values = compile_and_run(lib_file, cxx_code, temp, [ClassA, ClassB], use_implementation=True).split("\n")
+    assert int(values[0]) == 42
+    assert int(values[1]) == (21 - 42)
 
 
 if __name__ == "__main__":
-    test_cxx_object_funcs()
+    test_cxx_object_funcs("temp")

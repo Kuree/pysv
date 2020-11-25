@@ -50,3 +50,10 @@ def get_vector_filename_fn(filename):
 @pytest.fixture
 def get_vector_filename():
     return get_vector_filename_fn
+
+
+@pytest.fixture(scope="session")
+def temp():
+    temp_dir = tempfile.TemporaryDirectory()
+    yield temp_dir.name
+    temp_dir.__exit__(None, None, None)

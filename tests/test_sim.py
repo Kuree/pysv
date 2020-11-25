@@ -1,7 +1,6 @@
 import pysv.util
 from pysv import sv, compile_lib, DataType, generate_cxx_binding, generate_sv_binding
 from importlib.util import find_spec
-import tempfile
 import pytest
 import os
 import numpy as np
@@ -25,19 +24,18 @@ class BoxFilter:
 
 
 @pytest.mark.skipif(not pysv.util.is_verilator_available(), reason="Verilator not available")
-def test_verilator(get_vector_filename):
-    with tempfile.TemporaryDirectory() as temp:
-        lib_path = compile_lib([BoxFilter], cwd=temp)
-        header_file = os.path.join(os.path.abspath(temp), "box_filter.hh")
-        generate_cxx_binding([BoxFilter], filename=header_file)
+def test_verilator(get_vector_filename, temp):
+    lib_path = compile_lib([BoxFilter], cwd=temp)
+    header_file = os.path.join(os.path.abspath(temp), "box_filter.hh")
+    generate_cxx_binding([BoxFilter], filename=header_file)
 
-        # we have three files
-        # the sv file, the driver file, and the header
-        sv_file = get_vector_filename("box_filter.sv")
-        driver = get_vector_filename("test_verilator_boxfilter.cc")
-        # just run teh verilator
-        tester = pysv.util.VerilatorTester(lib_path, sv_file, header_file, driver, cwd=temp)
-        tester.run()
+    # we have three files
+    # the sv file, the driver file, and the header
+    sv_file = get_vector_filename("box_filter.sv")
+    driver = get_vector_filename("test_verilator_boxfilter.cc")
+    # just run teh verilator
+    tester = pysv.util.VerilatorTester(lib_path, sv_file, header_file, driver, cwd=temp)
+    tester.run()
 
 
 simulator_map = {
@@ -49,23 +47,23 @@ simulator_map = {
 
 
 @pytest.mark.parametrize("simulator", ("xcelium", "vcs", "questa", "vivado"))
-def test_sv_simulator(get_vector_filename, simulator):
+def test_sv_simulator(get_vector_filename, simulator, temp):
     avail, tester_cls = simulator_map[simulator]
     if not avail():
         pytest.skip("{0} not available".format(simulator))
-    with tempfile.TemporaryDirectory() as temp:
-        lib_path = compile_lib([BoxFilter], cwd=temp)
-        sv_pkg = os.path.join(os.path.abspath(temp), "pysv_pkg.sv")
-        generate_sv_binding([BoxFilter], filename=sv_pkg)
-        sv_file = get_vector_filename("box_filter.sv")
-        tb_file = get_vector_filename("test_sv_boxfilter.sv")
 
-        tester = tester_cls(lib_path, sv_pkg, sv_file, tb_file, cwd=temp)
-        tester.run()
+    lib_path = compile_lib([BoxFilter], cwd=temp)
+    sv_pkg = os.path.join(os.path.abspath(temp), "pysv_pkg.sv")
+    generate_sv_binding([BoxFilter], filename=sv_pkg)
+    sv_file = get_vector_filename("box_filter.sv")
+    tb_file = get_vector_filename("test_sv_boxfilter.sv")
+
+    tester = tester_cls(lib_path, sv_pkg, sv_file, tb_file, cwd=temp)
+    tester.run()
 
 
 @pytest.mark.skipif(find_spec("tensorflow") is None, reason="Tensorflow not installed")
-def test_tensorflow(get_vector_filename):
+def test_tensorflow(get_vector_filename, temp):
     # should work with any simulator, but it seems like the Xcelium we have doesn't ship
     # with the latest libstdc++. Use vcs instead
     avail, tester_cls = simulator_map["vcs"]
@@ -82,18 +80,17 @@ def test_tensorflow(get_vector_filename):
         s = np.sum(n)
         return s
 
-    with tempfile.TemporaryDirectory() as temp:
-        lib_path = compile_lib([simple_mat_mal], cwd=temp)
-        sv_pkg = os.path.join(os.path.abspath(temp), "pysv_pkg.sv")
-        generate_sv_binding([simple_mat_mal], filename=sv_pkg)
-        tb_file = get_vector_filename("test_tensorflow.sv")
+    lib_path = compile_lib([simple_mat_mal], cwd=temp)
+    sv_pkg = os.path.join(os.path.abspath(temp), "pysv_pkg.sv")
+    generate_sv_binding([simple_mat_mal], filename=sv_pkg)
+    tb_file = get_vector_filename("test_tensorflow.sv")
 
-        tester = tester_cls(lib_path, sv_pkg, tb_file, cwd=temp)
-        tester.run()
+    tester = tester_cls(lib_path, sv_pkg, tb_file, cwd=temp)
+    tester.run()
 
 
 @pytest.mark.parametrize("simulator", ("xcelium", "vcs"))
-def test_sv_object_funcs(get_vector_filename, simulator):
+def test_sv_object_funcs(get_vector_filename, simulator, temp):
     avail, tester_cls = simulator_map[simulator]
     if not avail():
         pytest.skip(simulator + " is not available")
@@ -119,17 +116,16 @@ def test_sv_object_funcs(get_vector_filename, simulator):
         def add(self, a):
             return self.a.num + a.num
 
-    with tempfile.TemporaryDirectory() as temp:
-        lib_path = compile_lib([ClassA, ClassB], cwd=temp)
-        sv_pkg = os.path.join(os.path.abspath(temp), "pysv_pkg.sv")
-        generate_sv_binding([ClassA, ClassB], filename=sv_pkg)
-        tb_tile = get_vector_filename("test_sv_object_funcs.sv")
+    lib_path = compile_lib([ClassA, ClassB], cwd=temp)
+    sv_pkg = os.path.join(os.path.abspath(temp), "pysv_pkg.sv")
+    generate_sv_binding([ClassA, ClassB], filename=sv_pkg)
+    tb_tile = get_vector_filename("test_sv_object_funcs.sv")
 
-        tester = pysv.util.XceliumTester(lib_path, sv_pkg, tb_tile, cwd=temp)
-        tester.run()
+    tester = pysv.util.XceliumTester(lib_path, sv_pkg, tb_tile, cwd=temp)
+    tester.run()
 
 
 if __name__ == "__main__":
     from conftest import get_vector_filename_fn
-    test_sv_object_funcs(get_vector_filename_fn, "xcelium")
+    test_sv_object_funcs(get_vector_filename_fn, "xcelium", "temp")
 
