@@ -126,13 +126,13 @@ def test_cxx_object_funcs():
         def __init__(self, a):
             self.a = a
 
-        @sv(return_type=DataType.Object)
+        @sv(return_type=ClassA)
         def create_a(self, num):
             a = ClassA()
             a.num = num
             return a
 
-        @sv(a=DataType.Object)
+        @sv(a=ClassA)
         def add(self, a):
             return self.a.num + a.num
 
@@ -142,7 +142,7 @@ def test_cxx_object_funcs():
 using namespace pysv;
 ClassA a1;
 ClassB b(&a1);
-auto a2 = b.create_a(-42);
+ClassA a2 = b.create_a(-42);
 std::cout << b.add(&a1) << std::endl;
 std::cout << b.add(&a2);
 pysv_finalize();

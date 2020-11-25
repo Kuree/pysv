@@ -18,6 +18,7 @@ __GET_LOCAL_OBJECT = "get_local_object"
 __PYSV_OBJECT_BASE = "PySVObject"
 __PYSV_DESTROY = "destroy"
 __LOAD_CLASS_DEFS = "load_class_defs"
+__C_ATTRIBUTE = '__attribute__((visibility("default"))) '
 
 
 def __get_code_snippet(name):
@@ -247,7 +248,7 @@ def get_c_function_signature(func_def: Union[Function, DPIFunctionCall], pretty_
     func_def = __get_func_def(func_def)
     return_type = get_c_type_str(func_def.return_type)
     if include_attribute:
-        attribute = '__attribute__((visibility("default"))) '
+        attribute = __C_ATTRIBUTE
     else:
         attribute = ""
     if is_class:
@@ -264,7 +265,10 @@ def get_c_function_signature(func_def: Union[Function, DPIFunctionCall], pretty_
                 func_name = func_def.base_name
                 # return as object
                 if func_def.return_type == DataType.Object:
-                    return_type = __PYSV_OBJECT_BASE
+                    if func_def.return_obj_ref is not None:
+                        return_type = func_def.return_obj_ref.__name__
+                    else:
+                        return_type = __PYSV_OBJECT_BASE
     else:
         func_name = func_def.func_name
 
@@ -286,7 +290,11 @@ def get_c_function_signature(func_def: Union[Function, DPIFunctionCall], pretty_
             continue
         t = func_def.arg_types[name]
         if is_class and t == DataType.Object:
-            t_str = __PYSV_OBJECT_BASE + "*"
+            if name in func_def.arg_obj_ref:
+                cls_name = func_def.arg_obj_ref[name].__name__
+            else:
+                cls_name = __PYSV_OBJECT_BASE
+            t_str = cls_name + "*"
         else:
             t_str = get_c_type_str(t)
         args.append("{0} {1}".format(t_str, name))
@@ -665,7 +673,7 @@ def generate_sv_binding(func_defs: List[Union[type, DPIFunctionCall]], pkg_name=
     return result
 
 
-def generate_cxx_class(cls, pretty_print: bool = True, include_implementation: bool = False):
+def generate_cxx_class(cls, pretty_print: bool = True, include_implementation: bool = False, ref_ctor: bool = False):
     result = ""
     assert cls is not None
     class_name = cls.__name__
@@ -684,6 +692,11 @@ def generate_cxx_class(cls, pretty_print: bool = True, include_implementation: b
             sig += " override"
 
         result += __INDENTATION + sig + ";\n"
+    # generate the extra constructor to deal with ref class
+    if ref_ctor:
+        attr = __C_ATTRIBUTE if include_implementation else ""
+        result += __INDENTATION + attr + "inline {0}(void *ptr): {1}(ptr) {{}}\n".format(class_name,
+                                                                                         __PYSV_OBJECT_BASE)
 
     result += "};\n"
 
@@ -717,7 +730,11 @@ def generate_cxx_class(cls, pretty_print: bool = True, include_implementation: b
             result += __INDENTATION * 2 + " ".join(tokens) + "\n"
             # return a pyobject wrapper
             if not func.func_def.is_init and func.func_def.return_type == DataType.Object:
-                result += __INDENTATION * 2 + "return {0}({1});\n".format(__PYSV_OBJECT_BASE, "ptr__")
+                if func.func_def.return_obj_ref is not None:
+                    cls_name = func.func_def.return_obj_ref.__name__
+                else:
+                    cls_name = __PYSV_OBJECT_BASE
+                result += __INDENTATION * 2 + "return {0}({1});\n".format(cls_name, "ptr__")
             result += __INDENTATION + "}\n"
 
     return result
@@ -753,9 +770,11 @@ def generate_cxx_binding(func_defs: List[Union[type, DPIFunctionCall]], pretty_p
     add_class = should_add_class(func_defs)
     if add_class:
         result += __get_code_snippet("cxx_object_base.cc")
+        class_refs = __get_forwarded_types(func_defs)
         for func_def in func_defs:
             if type(func_def) == type:
-                result += generate_cxx_class(func_def, pretty_print, include_implementation)
+                result += generate_cxx_class(func_def, pretty_print, include_implementation,
+                                             ref_ctor=func_def in class_refs)
 
     # end of namespace
     result += "}\n"
