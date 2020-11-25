@@ -46,7 +46,7 @@ def should_add_sys_path(func_defs):
 
 def make_dirs(filename):
     dirname = os.path.dirname(filename)
-    if not os.path.exists(dirname):
+    if dirname and not os.path.exists(dirname):
         os.makedirs(dirname, exist_ok=True)
 
 
