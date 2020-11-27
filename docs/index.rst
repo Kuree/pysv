@@ -12,7 +12,7 @@ pysv: Running Python Code in SystemVerilog
    :maxdepth: 3
    :caption: Advanced Topics
 
+   advanced/oop
    advanced/systemverilog
    advanced/verilator
-   advanced/oop
 
