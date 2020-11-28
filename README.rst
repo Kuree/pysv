@@ -1,6 +1,8 @@
 pysv: Running Python Code in SystemVerilog
 ===================================================
 
+|Latest Documentation Status| |Github CI| |Buildkite CI| |PyPI package|
+
 **pysv** is a lightweight Python library that allows functional models
 to be written in Python and then executed inside standard SystemVerilog
 simulators, via DPI.
@@ -98,3 +100,11 @@ Now we can use the class directly with the SystemVerilog binding:
 
 
 .. _pybind11: https://github.com/pybind/pybind11
+.. |Latest Documentation Status| image:: https://readthedocs.org/projects/pysv/badge/?version=latest
+  :target: https://pysv.readthedocs.io/?badge=latest
+.. |Github CI| image:: https://github.com/Kuree/pysv/workflows/CI%20Test/badge.svg
+  :target: https://github.com/Kuree/pysv/actions?query=branch%3Amaster
+.. |Buildkite CI| image:: https://badge.buildkite.com/84280442c566d340f8cafdce06463b5c47d59c88162a4948ba.svg
+  :target: https://buildkite.com/stanford-aha/pysv
+.. |PyPI package| image:: https://img.shields.io/pypi/v/pysv?color=blue
+  :target: https://pypi.org/project/pysv/
