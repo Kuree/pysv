@@ -177,10 +177,11 @@ def __get_forwarded_types(func_defs):
     result = []
     new_func_defs = __get_func_defs(func_defs)
     for func_def in new_func_defs:
+        func_def = __get_func_def(func_def)
         cls_list = []
-        if func_def.func_def.return_obj_ref is not None:
-            cls_list.append(func_def.func_def.return_obj_ref)
-        for t in func_def.func_def.arg_obj_ref.values():
+        if func_def.return_obj_ref is not None:
+            cls_list.append(func_def.return_obj_ref)
+        for t in func_def.arg_obj_ref.values():
             cls_list.append(t)
         for t in cls_list:
             assert t in func_defs, "sv class reference ({0}) as to be in the generate list".format(t.__name__)
