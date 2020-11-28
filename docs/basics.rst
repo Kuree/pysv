@@ -115,6 +115,8 @@ Generate binding code
 ---------------------
 
 pysv provides ability to generate both SystemVerilog and C++ bindings.
+For object-oriented code generation,
+please refer to :doc:`Object-Oriented Programming <advanced/oop>`.
 
 SystemVerilog binding
 ~~~~~~~~~~~~~~~~~~~~~
@@ -141,6 +143,13 @@ There are some optional arguments provided with default values:
 
   ``generate_sv_binding`` always returns the string content of the binding,
   regardless whether the binding has been written to a file or not.
+
+Below is the generated SystemVerilog function signature with our hello world example:
+
+.. code-block:: SystemVerilog
+
+  function void hello_world();
+
 
 C++ binding
 ~~~~~~~~~~~
@@ -170,3 +179,39 @@ There are some optional arguments provided with default values:
 
   ``generate_cxx_binding`` always returns the string content of the binding,
   regardless whether the binding has been written to a file or not.
+
+  Below is the generated C++ function signature with our hello world example:
+
+  .. code-block:: C++
+
+    void hello_world();
+
+
+Import foreign modules
+----------------------
+pysv can automatically detect any foreign module being used in the current working scope and
+modify the system path which python interpreter uses to search modules accordingly. 
+
+Currently supported import semantics:
+
+- Python modules, e.g.:
+   .. code-block:: Python
+
+     import numpy
+     import tensorflow as tf
+
+- Python classes from a module, e.g.:
+
+   .. code-block:: Python
+
+     from tensorflow import Tensor
+
+- Python functions from a module, e.g.:
+
+   .. code-block:: Python
+
+     from numpy import min
+
+Due to the current implementation limitation, however, functions or classes created from
+local scope are not supported and exception will be thrown when pysv detects that.
+One workaround is to create or import such functions/class inside the decorated function.

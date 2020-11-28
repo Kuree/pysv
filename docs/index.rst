@@ -15,4 +15,5 @@ pysv: Running Python Code in SystemVerilog
    advanced/oop
    advanced/systemverilog
    advanced/verilator
+   advanced/internal
 
