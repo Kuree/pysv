@@ -95,3 +95,78 @@ To do so, simply call the function ``compile_lib``:
 ``compile_lib`` returns the path to compiled shared object. ``cwd`` specifies the
 working directory of staged compilation. You can re-use the same ``cwd`` if you
 wish the speed up the compilation speed.
+
+There are more optional arguments provided with default values:
+
+- ``lib_name``: library name. Default value is ``"pysv"``. You will see generated
+  shared library in the form of ``lib${lib_name}.so``.
+- ``release_build``: whether to use CMake release build. Default is ``False``. Using
+  release build will significantly improve the C++-Python interface performance, at
+  the cost of prolonged compilation time.
+- ``clean_up_build``: whether to remove the build folder. Notice that pysv creates
+  a ``build`` folder for CMake to compile. Set this option to ``True`` to remove that
+  folder. This, however, does not remove the immediate code generated.
+- ``add_sys_path``: whether to add system path. Default is ``False``. pysv uses a set
+  of rules to detect whether user has imported a foreign module, and automatically
+  set set system path if detected. However, should the rules fail, user can manually
+  set this flag to ``True`` to force add system path.
+
+Generate binding code
+---------------------
+
+pysv provides ability to generate both SystemVerilog and C++ bindings.
+
+SystemVerilog binding
+~~~~~~~~~~~~~~~~~~~~~
+``generate_sv_binding`` is the function you need to generate the SystemVerilog
+binding. Below is an example usage:
+
+.. code-block:: Python
+
+  binding = generate_sv_binding([hello_world])
+
+The first argument takes in a list of function names that's been decorated with
+``@sv``. An exception will thrown if pysv detects that the function has not been
+done so.
+
+There are some optional arguments provided with default values:
+
+- ``pkg_name``: the SystemVerilog package name. If not set, ``pysv`` is used.
+- ``pretty_print``: whether to format the code based on some coding style. Default
+  is ``True``.
+- ``filename``: if provided, pysv will write the binding code to the specified
+  filename.
+
+.. note::
+
+  ``generate_sv_binding`` always returns the string content of the binding,
+  regardless whether the binding has been written to a file or not.
+
+C++ binding
+~~~~~~~~~~~
+``generate_cxx_binding`` is the function you need to generate the C++ binding. Below
+is an example uage:
+
+.. code-block:: Python
+
+  binding = generate_cxx_binding([hello_world])
+
+The first argument takes in a list of function names that's been decorated with
+``@sv``. An exception will thrown if pysv detects that the function has not been
+done so.
+
+There are some optional arguments provided with default values:
+
+- ``namespace``: the C++ namespace name. If not set, ``pysv`` is used.
+- ``pretty_print``: whether to format the code based on some coding style. Default
+  is ``True``.
+- ``filename``: if provided, pysv will write the binding code to the specified
+  filename.
+- ``include_implementation``: if set ``True``, the actual C++ implemented will be
+  generated as well. Only for debugging, since the functions are not declared as
+  ``inline`` and will verily trigger linker error.
+
+.. note::
+
+  ``generate_cxx_binding`` always returns the string content of the binding,
+  regardless whether the binding has been written to a file or not.
