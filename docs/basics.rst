@@ -215,3 +215,19 @@ Currently supported import semantics:
 Due to the current implementation limitation, however, functions or classes created from
 local scope are not supported and exception will be thrown when pysv detects that.
 One workaround is to create or import such functions/class inside the decorated function.
+
+
+Shutdown the Python runtime
+---------------------------
+
+pysv maintains several global state to ensure the liveness of Python objects. These global
+data structures need to be destroyed before simulation finishes, otherwise you may get
+a segfault depends on how simulator frees up memory. pysv generates ``pysv_finalize()``
+function in SystemVerilog and C++ binding code so users can call it at the end of
+simulation.
+
+.. warning::
+
+  For a small-scale simulation, especially with Verilator or no foreign modules are imported
+  ending simulation without calling ``pysv_finalize()`` will be fine in most cases. However,
+  it is the best practice to call it at the end of simulation.
