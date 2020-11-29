@@ -12,7 +12,7 @@ void check_sys_path(const char *python_lib) {
             sys.attr("path").attr("clear")();
         }
 
-        for (auto const path: SYS_PATH) {
+        for (auto const &path: SYS_PATH) {
             sys.attr("path").attr("append")(py::str(path));
         }
         // also load it into the global table if it's on linux. only needed for ModelSim/Questa
