@@ -118,6 +118,8 @@ pysv provides ability to generate both SystemVerilog and C++ bindings.
 For object-oriented code generation,
 please refer to :doc:`Object-Oriented Programming <advanced/oop>`.
 
+.. _sv-binding:
+
 SystemVerilog binding
 ~~~~~~~~~~~~~~~~~~~~~
 ``generate_sv_binding`` is the function you need to generate the SystemVerilog
@@ -150,6 +152,7 @@ Below is the generated SystemVerilog function signature with our hello world exa
 
   function void hello_world();
 
+.. _cxx-binding:
 
 C++ binding
 ~~~~~~~~~~~
@@ -180,11 +183,11 @@ There are some optional arguments provided with default values:
   ``generate_cxx_binding`` always returns the string content of the binding,
   regardless whether the binding has been written to a file or not.
 
-  Below is the generated C++ function signature with our hello world example:
+Below is the generated C++ function signature with our hello world example:
 
-  .. code-block:: C++
+.. code-block:: C++
 
-    void hello_world();
+  void hello_world();
 
 
 Import foreign modules
