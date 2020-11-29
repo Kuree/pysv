@@ -679,11 +679,11 @@ def generate_sv_class_method(func, pretty_print: bool = True, ref_ctor: bool = F
             # special case to call constructor differently
             # need to generate an if statement
             result += """{0}{0}if ({1} == null) begin
-    {0}{0}{0}{2} = {3}({4});
-    {0}{0}end
-    {0}{0}else begin
-    {0}{0}{0}{2} = {1};
-    {0}{0}end\n""".format(base_indentation, class_ref_ctor_name, chandle_name, func.func_name, args)
+{0}{0}{0}{2} = {3}({4});
+{0}{0}end
+{0}{0}else begin
+{0}{0}{0}{2} = {1};
+{0}{0}end\n""".format(base_indentation, class_ref_ctor_name, chandle_name, func.func_name, args)
         else:
             # normal function call
             result += indentation + "{0} = {1}({2});\n".format(chandle_name, func.func_name, args)
