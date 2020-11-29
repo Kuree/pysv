@@ -119,13 +119,38 @@ def test_sv_object_funcs(get_vector_filename, simulator, temp):
     lib_path = compile_lib([ClassA, ClassB], cwd=temp)
     sv_pkg = os.path.join(os.path.abspath(temp), "pysv_pkg.sv")
     generate_sv_binding([ClassA, ClassB], filename=sv_pkg)
-    tb_tile = get_vector_filename("test_sv_object_funcs.sv")
+    tb_file = get_vector_filename("test_sv_object_funcs.sv")
 
-    tester = pysv.util.XceliumTester(lib_path, sv_pkg, tb_tile, cwd=temp)
+    tester = tester_cls(lib_path, sv_pkg, tb_file, cwd=temp)
+    tester.run()
+
+
+def test_sv_object_funcs_2(get_vector_filename, temp):
+    # test out a normal function takes in Python object
+    simulator = "xcelium"
+    avail, tester_cls = simulator_map[simulator]
+    if not avail():
+        pytest.skip(simulator + " is not available")
+
+    class ClassA2:
+        @sv()
+        def __init__(self):
+            self.num = 1
+
+    @sv(a=ClassA2)
+    def add(a):
+        return a.num + 41
+
+    lib_path = compile_lib([ClassA2, add], cwd=temp)
+    sv_pkg = os.path.join(os.path.abspath(temp), "pysv_pkg.sv")
+    generate_sv_binding([ClassA2, add], filename=sv_pkg)
+    tb_file = get_vector_filename("test_sv_object_funcs_2.sv")
+
+    tester = tester_cls(lib_path, sv_pkg, tb_file, cwd=temp)
     tester.run()
 
 
 if __name__ == "__main__":
     from conftest import get_vector_filename_fn
-    test_sv_object_funcs(get_vector_filename_fn, "xcelium", "temp")
+    test_sv_object_funcs_2(get_vector_filename_fn, "temp")
 

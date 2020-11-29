@@ -108,7 +108,7 @@ def test_function_import(temp):
     assert value in range(0, 42 + 1)
 
 
-def test_cxx_object_funcs(temp):
+def test_cxx_object_funcs_1(temp):
     class ClassA:
         @sv()
         def __init__(self):
@@ -144,5 +144,27 @@ pysv_finalize();
     assert int(values[1]) == (21 - 42)
 
 
+def test_cxx_object_funcs_2(temp):
+    class ClassA2:
+        @sv()
+        def __init__(self):
+            self.num = 42
+
+    @sv(a=ClassA2)
+    def foo(a):
+        print(a.num)
+
+    lib_file = compile_lib([ClassA2, foo], cwd=temp)
+    cxx_code = """
+using namespace pysv;
+ClassA2 a;
+foo(&a);
+pysv_finalize();
+    """
+    value = compile_and_run(lib_file, cxx_code, temp, [ClassA2, foo], use_implementation=True)
+    value = int(value)
+    assert value == 42
+
+
 if __name__ == "__main__":
-    test_cxx_object_funcs("temp")
+    test_cxx_object_funcs_2("temp")

@@ -123,10 +123,16 @@ class DPIFunction(Function):
         else:
             return get_function_src(self.func)
 
+    def has_obj_ref(self):
+        return len(self.arg_obj_ref) > 0 or self.return_obj_ref is not None
+
     @property
     def func_name(self):
         if self.parent_class is None:
-            return self.__func_name
+            if self.has_obj_ref():
+                return "{0}_".format(self.__func_name)
+            else:
+                return self.__func_name
         else:
             cls_name = self.parent_class.__name__
             return "{0}_{1}".format(cls_name, self.__func_name)
@@ -160,7 +166,10 @@ class DPIFunctionCall:
 
     def __get__(self, instance, owner):
         # see SO answer here: https://stackoverflow.com/a/48491028
-        self.func_def.parent_class = owner
+        if self.func_def.parent_class is not None:
+            assert self.func_def.parent_class == owner
+        else:
+            self.func_def.parent_class = owner
         return self
 
     def __call__(self, *args, **kwargs):
