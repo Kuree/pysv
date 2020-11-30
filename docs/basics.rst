@@ -2,7 +2,7 @@
 
 Basic usages
 ============
-This sections demonstrates the basic features of pysv.
+This section demonstrates the basic features of pysv.
 
 Hello World!
 ------------
@@ -50,7 +50,8 @@ Function arguments and return types
 -----------------------------------
 By default, if a function argument type is not specified, pysv will assume it is of
 ``DataType.Int`` type (``int32_t`` in C).
-To specify the argument type, we can add the types to the function decorator.
+To specify the argument type, we can add the types to the function decorator with given
+argument name.
 
 .. code-block:: Python
 
@@ -174,9 +175,9 @@ There are some optional arguments provided with default values:
   is ``True``.
 - ``filename``: if provided, pysv will write the binding code to the specified
   filename.
-- ``include_implementation``: if set ``True``, the actual C++ implemented will be
+- ``include_implementation``: if set to ``True``, the actual C++ implemented will be
   generated as well. Only for debugging, since the functions are not declared as
-  ``inline`` and will verily trigger linker error.
+  ``inline`` and will likely trigger a linker error.
 
 .. note::
 
@@ -231,6 +232,6 @@ simulation.
 
 .. warning::
 
-  For a small-scale simulation, especially with Verilator or no foreign modules are imported
+  For a small-scale simulation, especially with Verilator or no foreign modules are imported,
   ending simulation without calling ``pysv_finalize()`` will be fine in most cases. However,
   it is the best practice to call it at the end of simulation.

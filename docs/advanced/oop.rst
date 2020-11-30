@@ -37,7 +37,7 @@ export the methods decorated with ``@sv``.
   ``@sv`` decorator since pysv will generate default constructor automatically. Nonetheless,
   it doesn't hurt to decorate the constructor.
 
-To use it in the SystemVerilog, first, we generate the SystemVerilog binding
+To use it in the SystemVerilog, we need to first generate the SystemVerilog binding
 
 .. code-block:: Python
 
@@ -107,7 +107,7 @@ class generated:
 
 Notice that every SystemVerilog wrapper class is inherited from the base class
 ``PySVObject``, which has an C pointer to the actual Python object. To allow
-wrapper objects being created without the pointer only, we added additional
+wrapper objects being created with the pointer only, we added additional
 argument to the constructor, since SystemVerilog does not support function
 overloading.
 
@@ -117,11 +117,11 @@ function is generated as follows, with proper function signature.
 .. code-block:: SystemVerilog
 
   function int foo_bar(input Foo foo,
-                      input int num);
+                       input int num);
     return foo_bar_(foo.pysv_ptr, num);
   endfunction
 
-For cases where you need duck-type the Python objects, you can set the argument
+For cases where you need to duck-type the Python objects, you can set the argument
 or type to ``DataType.Object``. With that, ``PySVObject`` type will be used in
 the signature, which avoids illegal downcast in SystemVerilog.
 

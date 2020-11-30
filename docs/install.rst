@@ -39,7 +39,7 @@ SystemVerilog simulators
 pysv is designed to be simulator agonistic: it can work with virtually any
 simulator that supports DPI function calls. Since pysv generates C++ code,
 it naturally supports Verilator. Here is a list of simulators that pysv has
-been tested one
+been tested on:
 
 - Cadence® Xcelium™
 - Synopsys VCS®

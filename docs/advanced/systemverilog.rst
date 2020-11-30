@@ -3,7 +3,7 @@
 Use pysv with SystemVerilog
 ===========================
 
-This sections will cover usages with common SystemVerilog simulator.
+This sections will cover usages with common SystemVerilog simulators.
 Too see how to generate SystemVerilog binding with classes,
 please refer to :ref:`sv-binding` and :doc:`oop`.
 
@@ -28,8 +28,8 @@ VCS follows the exact same flag as Xcelium:
 
   vcs design1.sv design2.sv pysv_pkg.sv top.sv -sverilog -sv_lib build/libpysv.so
 
-Notice that we need additional `-sverilog` to let the parser switch to SystemVerilog
-mode.
+Notice that we need the additional `-sverilog` flag to let the parser switch to
+SystemVerilog mode.
 
 Mentor Questa®
 --------------

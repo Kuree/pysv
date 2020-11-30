@@ -3,7 +3,9 @@
 How pysv works
 ==============
 
-pysv relies heavily on pybind11 to interface with Python interpreter.
+pysv relies heavily on pybind11 to interface with Python interpreter. It is done via
+embedding the Python interpreter inside the shared library. You can find more details
+on `pybind11's documentation`_.
 
 
 Function code generation
@@ -129,6 +131,14 @@ Here is an example to see generated SystemVerilog class definition
     endclass
     endpackage
 
+DPI functions are in the form of
+
+.. code-block:: SystemVerilog
+
+  import "DPI-C" function chandle Foo_pysv_init();
+
+Python types are converted into SystemVerilog types based on auto detection or user-provided
+``DataType``.  
 
 Notice that the class methods is flattened into normal function where the first
 argument is the C pointer. Each generated class will hold a pointer to its
@@ -136,3 +146,4 @@ corresponding Python class object.
 
 
 .. _DPI: https://en.wikipedia.org/wiki/SystemVerilog_DPI
+.. _pybind11's documentation: https://pybind11.readthedocs.io/en/stable/advanced/embedding.html

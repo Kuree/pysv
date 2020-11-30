@@ -69,6 +69,7 @@ computation.
 
        @sv()
        def min(self):
+           # call the numpy function
            return np.min(self.__array)
 
        @sv(return_type=DataType.Bit)
@@ -97,6 +98,8 @@ Now we can use the class directly with the SystemVerilog binding:
     a.add_element(1);
     assert(a.exists(1));
     assert(!a.exists(2));
+    // numpy under the hood!
+    assert(a.min() == 1);
 
 
 .. _pybind11: https://github.com/pybind/pybind11

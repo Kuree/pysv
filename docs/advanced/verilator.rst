@@ -12,9 +12,11 @@ Too see how to generate C++ binding with classes, please refer to
 
   .. code-block::
     
-    verilator --cc design1.sv design2.sv top.cc pysv_cxx.hh libpysv.so
+    verilator --cc design1.sv design2.sv top.cc libpysv.so
 
-2. Make sure ``libpysv.so`` is in your ``LD_LIBRARY_PATH`` when you run
+2. Copy the CXX binding file to proper places so your test bench code can include it.
+
+3. Make sure ``libpysv.so`` is in your ``LD_LIBRARY_PATH`` when you run
    the test bench binary, e.g.
 
   .. code-block::
