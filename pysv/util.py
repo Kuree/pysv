@@ -75,6 +75,12 @@ def make_unique_func_defs(func_defs):
     return [x for x in result if not (x in seen or seen_add(x))]
 
 
+def should_import(import_name, py_src):
+    # fixme: this is some brute-force check that might get lots of false negative
+    #  but shouldn't get any false positive
+    return import_name in py_src
+
+
 def is_xcelium_available():
     return shutil.which("xrun") is not None
 

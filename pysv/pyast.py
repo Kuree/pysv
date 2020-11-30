@@ -55,8 +55,10 @@ def get_class_src(cls: type):
     return src
 
 
-def get_function_src(func: type):
+def get_function_src(func: type, check_decorator=True):
     fn_src = inspect.getsource(func)
+    if not check_decorator:
+        return fn_src
     func_tree = ast.parse(textwrap.dedent(fn_src))
     fn_body = func_tree.body[0]
     # only support one decorator

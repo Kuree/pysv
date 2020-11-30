@@ -2,7 +2,7 @@ from typing import Union, List
 from .function import Function, DPIFunctionCall, sv
 from .types import DataType
 from .model import check_class_ctor, get_dpi_functions, inject_destructor, check_class_method
-from .util import should_add_class, should_add_sys_path, make_dirs, make_unique_func_defs
+from .util import should_add_class, should_add_sys_path, make_dirs, make_unique_func_defs, should_import
 import os
 import sys
 
@@ -339,7 +339,12 @@ def generate_local_variables(func_def: Union[Function, DPIFunctionCall]):
 
 def generate_global_variables(func_def: Union[Function, DPIFunctionCall], add_class=False):
     func_def = __get_func_def(func_def)
-    imports = func_def.imports
+    raw_imports = func_def.imports
+    imports = {}
+    py_src = func_def.get_func_src(False)
+    for n, m in raw_imports.items():
+        if should_import(n, py_src):
+            imports[n] = m
     result = __INDENTATION + "auto globals = py::dict();\n"
     if add_class:
         result += __INDENTATION + __LOAD_CLASS_DEFS + "(globals);\n"

@@ -34,7 +34,7 @@ class Function:
         self.return_obj_ref = None
 
     @abc.abstractmethod
-    def get_func_src(self):
+    def get_func_src(self, check_sv_decorator=True):
         pass
 
     @property
@@ -114,14 +114,14 @@ class DPIFunction(Function):
             arg_type = DataType.Object
         return arg_type
 
-    def get_func_src(self):
+    def get_func_src(self, check_sv_decorator: bool = True):
         # get the content of the function as str
         assert self.func is not None
         # notice that for __init__, the entire class has to be generated
         if self.parent_class is not None and self.is_init:
             return get_class_src(self.parent_class)
         else:
-            return get_function_src(self.func)
+            return get_function_src(self.func, check_decorator=check_sv_decorator)
 
     def has_obj_ref(self):
         return len(self.arg_obj_ref) > 0 or self.return_obj_ref is not None
