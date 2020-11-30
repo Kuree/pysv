@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+# [0.1.0] - 2020-11-30
+### Added
+- Add support for importing types and functions
+- Add support for explicit import
+- Add documentation
+- Add support for Python object as function arguments
+
+### Changed
+- Python pointer is changed to public in SV/C++
+- Relax restriction on whether sv has been called or not as function decorator
+
+### Fixed
+- Minor code generation style fix
+
 # [0.0.5] - 2020-11-21
 ### Fixed
 - For simple compile_and_run, add c++11 flag for old compilers
