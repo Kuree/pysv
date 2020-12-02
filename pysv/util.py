@@ -75,6 +75,23 @@ def make_unique_func_defs(func_defs):
     return [x for x in result if not (x in seen or seen_add(x))]
 
 
+def clear_imports(func_defs):
+    from .model import get_dpi_functions
+    from .codegen import __get_func_def
+    if not isinstance(func_defs, list):
+        func_defs = [func_defs]
+    func_defs = make_unique_func_defs(func_defs)
+    for func_def in func_defs:
+        if type(func_def) == type:
+            funcs = get_dpi_functions(func_def)
+            for f in funcs:
+                f = __get_func_def(f)
+                f.imports.clear()
+        else:
+            func_def = __get_func_def(func_def)
+            func_def.imports.clear()
+
+
 def should_import(import_name, py_src):
     # fixme: this is some brute-force check that might get lots of false negative
     #  but shouldn't get any false positive

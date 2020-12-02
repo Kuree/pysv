@@ -1,5 +1,5 @@
 from pysv import sv
-from pysv.util import should_add_sys_path, make_unique_func_defs
+from pysv.util import should_add_sys_path, make_unique_func_defs, clear_imports
 
 
 def test_should_add_sys_path():
@@ -25,5 +25,18 @@ def test_make_unique_func_defs():
     assert len(make_unique_func_defs([Foo.bar, Foo, Foo.bar])) == 1
 
 
+def test_clear_imports():
+    import os
+
+    @sv()
+    def foo():
+        pass
+
+    before = foo.func_def.imports
+    assert "os" in before
+    clear_imports(foo)
+    assert len(before) == 0
+
+
 if __name__ == "__main__":
-    test_make_unique_func_defs()
+    test_clear_imports()
