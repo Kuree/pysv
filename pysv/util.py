@@ -6,6 +6,12 @@ import abc
 import distutils.sysconfig as sysconfig
 
 
+def is_conda():
+    # this should work with both 3.7+ and below
+    # see https://stackoverflow.com/a/21282816
+    return os.path.exists(os.path.join(sys.prefix, 'conda-meta')) or "conda" in sys.version
+
+
 def should_add_class(func_defs):
     for func_def in func_defs:
         if type(func_def) == type:
@@ -14,6 +20,9 @@ def should_add_class(func_defs):
 
 
 def should_add_sys_path(func_defs):
+    # if it's miniconda, always add system path
+    if is_conda():
+        return True
     # looking into the imported module and see if they are system module
     defs = []
     for func_def in func_defs:

@@ -56,7 +56,10 @@ void initialize_guard() {
     // when we check the system path
     if (python_env_vars.first.empty()) {
         // we all good
-        // can't use make_unique since it's c++ only
+        // can't use make_unique since it's c++14 only
+        if (!conda_python_home.empty()) {
+            set_py_env(std::make_pair(conda_python_home, conda_python_path));
+        }
         guard = std::unique_ptr<py::scoped_interpreter>(new py::scoped_interpreter());
     } else {
         // unset the env

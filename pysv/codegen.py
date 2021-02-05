@@ -2,7 +2,7 @@ from typing import Union, List
 from .function import Function, DPIFunctionCall, sv
 from .types import DataType
 from .model import check_class_ctor, get_dpi_functions, inject_destructor, check_class_method
-from .util import should_add_class, should_add_sys_path, make_dirs, make_unique_func_defs, should_import
+from .util import should_add_class, should_add_sys_path, make_dirs, make_unique_func_defs, should_import, is_conda
 import os
 import sys
 
@@ -42,6 +42,19 @@ def __should_include_local_object(func_defs):
             if arg_type == DataType.Object:
                 return True
     return False
+
+
+def __get_conda_path():
+    result = ""
+    if is_conda():
+        python_home = os.path.dirname(sys.executable)
+        python_path = ":".join(sys.path)
+        result += "std::string conda_python_home = \"{0}\"\n;".format(python_home)
+        result += "std::string conda_python_path = \"{0}\";\n".format(python_path)
+    else:
+        result += "std::string conda_python_home;\n"
+        result += "std::string conda_python_path;\n"
+    return result
 
 
 def generate_dpi_signature(func_def: Union[Function, DPIFunctionCall],
@@ -446,6 +459,7 @@ def generate_bootstrap_code(pretty_print=True, add_sys_path=True, add_class=True
     result += __get_code_snippet("runtime_values.cc")
 
     if add_sys_path:
+        result += __get_conda_path()
         result += __get_code_snippet("initialize_guard.cc")
         result += generate_sys_path_values(pretty_print)
         result += __get_code_snippet("sys_path.cc")
