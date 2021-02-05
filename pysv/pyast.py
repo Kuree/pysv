@@ -14,6 +14,11 @@ class __HasDPIVisitor(ast.NodeVisitor):
             self.result = True
         self.generic_visit(node)
 
+    def visit_Attribute(self, node: ast.Attribute):
+        if node.attr == "sv":
+            self.result = True
+        self.generic_visit(node)
+
 
 class __HasReturnVisitor(ast.NodeVisitor):
     def __init__(self):

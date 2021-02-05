@@ -4,6 +4,7 @@ from pysv.compile import compile_and_run
 from pysv.function import DPIFunctionCall, make_call
 from pysv.model import get_dpi_functions, check_class_ctor
 from pysv.pyast import get_class_src
+import pysv
 
 
 class TestModel:
@@ -93,5 +94,15 @@ def test_model_make_call():
     assert v_str == "new TestModel(1, 2)"
 
 
+def test_pysv_sv():
+    class SomeClassA:
+        @pysv.sv()
+        def __init__(self):
+            pass
+
+    src = get_class_src(SomeClassA)
+    assert "pysv" not in src
+
+
 if __name__ == "__main__":
-    test_model_make_call()
+    test_pysv_sv()
