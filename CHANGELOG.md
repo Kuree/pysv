@@ -4,15 +4,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [0.1.2] - 2020-12-01
+## [0.1.3] - 2021-02-04
+### Fixed
+- Add special logic to detect conda environment (#10)
+- Fix pysv deco detection in cases where pysv is used instead of sv
+
+## [0.1.2] - 2020-12-01
 ### Added
 - Add a helper function to force clear imports
 
-# [0.1.1] - 2020-11-30
+## [0.1.1] - 2020-11-30
 ### Added
 - Add guards on imports if it's never used in the code
 
-# [0.1.0] - 2020-11-30
+## [0.1.0] - 2020-11-30
 ### Added
 - Add support for importing types and functions
 - Add support for explicit import
@@ -26,11 +31,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Minor code generation style fix
 
-# [0.0.5] - 2020-11-21
+## [0.0.5] - 2020-11-21
 ### Fixed
 - For simple compile_and_run, add c++11 flag for old compilers
 
-# [0.0.4] - 2020-11-20
+## [0.0.4] - 2020-11-20
 ### Added
 - Better func_def filtering to figure out proper inputs to the codegen
 - Meta information holder for the exported function to be used by other libraries. The variable will not be touch by pysv
@@ -42,7 +47,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - arg_to_str will force to convert values to str
 
 
-# [0.0.3] - 2020-11-19
+## [0.0.3] - 2020-11-19
 ### Changed
 - When code generate binding files, directory will be created automatically if not exist
 - CI will upload artifacts
