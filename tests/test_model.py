@@ -104,5 +104,27 @@ def test_pysv_sv():
     assert "pysv" not in src
 
 
+def test_subclass_abc(temp):
+    from abc import ABC, abstractmethod
+
+    class ClassBase(ABC):
+        @abstractmethod
+        def foo(self):
+            pass
+
+    class ClassChild(ClassBase):
+        @sv()
+        def __init__(self):
+            pass
+
+        @sv()
+        def foo(self):
+            pass
+
+    c_code = ""
+    lib_path = compile_lib([ClassChild], cwd=temp)
+    compile_and_run(lib_path, c_code, temp, [ClassChild])
+
+
 if __name__ == "__main__":
     test_pysv_sv()

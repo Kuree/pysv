@@ -14,9 +14,13 @@ def is_conda():
 
 def should_add_class(func_defs):
     for func_def in func_defs:
-        if type(func_def) == type:
+        if is_class(func_def):
             return True
     return False
+
+
+def is_class(cls):
+    return type(cls) == type or issubclass(type(cls), type)
 
 
 def should_add_sys_path(func_defs):
@@ -26,7 +30,7 @@ def should_add_sys_path(func_defs):
     # looking into the imported module and see if they are system module
     defs = []
     for func_def in func_defs:
-        if type(func_def) == type:
+        if is_class(func_def):
             # just need to get the constructor
             defs.append(func_def.__init__)
         else:
@@ -64,7 +68,7 @@ def make_unique_func_defs(func_defs):
     result = []
     classes = []
     for func_def in func_defs:
-        if type(func_def) == type:
+        if is_class(func_def):
             if func_def not in classes:
                 result.append(func_def)
                 classes.append(func_def)
@@ -91,7 +95,7 @@ def clear_imports(func_defs):
         func_defs = [func_defs]
     func_defs = make_unique_func_defs(func_defs)
     for func_def in func_defs:
-        if type(func_def) == type:
+        if is_class(func_def):
             funcs = get_dpi_functions(func_def)
             for f in funcs:
                 f = __get_func_def(f)

@@ -2,7 +2,8 @@ from typing import Union, List
 from .function import Function, DPIFunctionCall, sv
 from .types import DataType
 from .model import check_class_ctor, get_dpi_functions, inject_destructor, check_class_method
-from .util import should_add_class, should_add_sys_path, make_dirs, make_unique_func_defs, should_import, is_conda
+from .util import (should_add_class, should_add_sys_path, make_dirs, make_unique_func_defs, should_import, is_conda,
+                   is_class)
 import os
 import sys
 
@@ -158,7 +159,7 @@ def __get_func_def(func_def: Union[Function, DPIFunctionCall]) -> Function:
 def __get_func_defs(func_defs):
     new_defs: List[DPIFunctionCall] = []
     for func in func_defs:
-        if type(func) == type:
+        if is_class(func):
             funcs = get_dpi_functions(func)
             for f in funcs:
                 new_defs.append(f)
@@ -169,7 +170,7 @@ def __get_func_defs(func_defs):
 
 def __initialize_class_defs(func_defs):
     for func in func_defs:
-        if type(func) == type:
+        if is_class(func):
             check_class_ctor(func)
             inject_destructor(func)
             check_class_method(func)
@@ -177,7 +178,7 @@ def __initialize_class_defs(func_defs):
 
 def __has_imports(func_defs):
     for func in func_defs:
-        if type(func) == type:
+        if is_class(func):
             fs = get_dpi_functions(func)
             f: DPIFunctionCall
             for f in fs:
@@ -546,7 +547,7 @@ def generate_c_headers(func_defs, pretty_print: bool = True):
         func_defs = func_defs + [pysv_finalize]
     func_defs = make_unique_func_defs(func_defs)
     for func_def in func_defs:
-        if type(func_def) == type:
+        if is_class(func_def):
             funcs = get_dpi_functions(func_def)
             for f in funcs:
                 headers.append(generate_c_header(f, pretty_print))
@@ -779,7 +780,7 @@ def generate_sv_binding(func_defs: List[Union[type, DPIFunctionCall]], pkg_name=
         # need to generate forward definition if needed
         result += generate_forward_sv_class_definition(class_refs)
         for func_def in func_defs:
-            if type(func_def) == type:
+            if is_class(func_def):
                 result += generate_sv_class(func_def, pretty_print, func_def in class_refs)
         # any function takes in class as well
         result += generate_sv_function_with_class(func_defs, pretty_print=pretty_print)
@@ -860,7 +861,7 @@ def generate_cxx_binding(func_defs: List[Union[type, DPIFunctionCall]], pretty_p
         result += __get_code_snippet("cxx_object_base.cc")
         class_refs = __get_forwarded_types(func_defs)
         for func_def in func_defs:
-            if type(func_def) == type:
+            if is_class(func_def):
                 result += generate_cxx_class(func_def, pretty_print, include_implementation,
                                              ref_ctor=func_def in class_refs)
         result += generate_cxx_function_with_class(func_defs, include_implementation=include_implementation,

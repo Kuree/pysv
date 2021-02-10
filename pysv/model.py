@@ -1,6 +1,7 @@
 import inspect
 from .function import DPIFunctionCall, DPIFunction
 from .types import DataType
+from .util import is_class
 
 
 def get_dpi_functions(cls: type):
@@ -55,7 +56,7 @@ def check_class_method(cls: type):
 
 
 def inject_destructor(cls: type):
-    assert type(cls) == type
+    assert is_class(cls)
     # use keyword "destroy" as the destructor function name
 
     def destroy(self):
