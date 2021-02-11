@@ -41,7 +41,7 @@ def _get_import_name(val, check_type=True):
         return val.__name__
     else:
         # we support class type import as well
-        if not hasattr(val, "__module__"):
+        if not getattr(val, "__module__", None):
             return None
         module_name = val.__module__.split(".")[0]
         full_name = None
