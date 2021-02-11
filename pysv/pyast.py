@@ -46,7 +46,15 @@ def has_return(func: typing.Callable):
 def get_class_src(cls: type):
     # we need to remove all the @dpi decorators in the ast
     # so that they can actually be called
-    code = inspect.getsource(cls)
+    if hasattr(cls, "_source_code_"):
+        # If we define a class inside exec (e.g. when doing AST rewrites on the
+        # Python source) we can't use inspect.getsource (since the code comes
+        # froms a string rather than a file).  So, we provide a special
+        # attribute that downstream tools can use to store the generated source
+        # code
+        code = cls._source_code_
+    else:
+        code = inspect.getsource(cls)
     class_tree = ast.parse(textwrap.dedent(code))
     # need to clear out any DPI function decorator
     class_ast = class_tree.body[0]
