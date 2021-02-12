@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.5] - 2021-02-11
+### Added
+- Add support for cases when `__module__` is None (#12)
+- Add support for custom attribute `_source_code_` for classes where are generated from exec (#13)
+
 ## [0.1.4] - 2021-02-09
 ### Fixed
 - Improve class type detection, especially for metaclass
