@@ -80,7 +80,37 @@ pysv uses two rules to infer return types if not specified
 ``DataType.Void``.
 2. Otherwise it is set to ``DataType.Int``
 
-For more complex data type such as Python objects, please refer to :doc:`Object-Oriented Programming <advanced/oop>`.
+.. note::
+
+  For more complex data type such as Python objects, please refer to :doc:`Object-Oriented Programming <advanced/oop>`.
+
+If you wish to return multiple objects (i.e. tuple), due to the restriction of DPI typing system,
+we need to specify the return tuple using `Reference` object. Here is a simple example:
+
+.. code-block:: Python
+
+    from pysv import sv, DataType, Reference
+
+    @sv(return_type=Reference(a=DataType.UInt, b=DataType.Uint))
+    def set_values():
+        return 42, 43
+
+In the example, we create a reference object to specify the return type names and their individual
+types. pysv will unwrap the tuple and set the output accordingly. In SystemVerilog, we will see
+the following function definition
+
+.. code-block:: SystemVerilog
+
+    function set_values(output int a, output int b);
+
+Whereas in C/C++ we will see the following function definition:
+
+.. code-block:: C++
+
+    void set_values(int *a, int *b);
+
+Notice that your function can take normal input arguments. All the output arguments will be
+generated after the inputs.
 
 Library compilation
 -------------------
