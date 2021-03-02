@@ -170,6 +170,7 @@ def test_sv_return_reference(get_vector_filename, temp):
     tester.run()
 
 
+@pytest.mark.skipif(not pysv.util.is_verilator_available(), reason="Verilator not available")
 def test_verilator_return_reference(get_vector_filename, temp):
     @sv(return_type=Reference(a=DataType.UInt, b=DataType.UInt))
     def set_value():
