@@ -1,5 +1,5 @@
 import pysv.util
-from pysv import sv, compile_lib, DataType, generate_cxx_binding, generate_sv_binding
+from pysv import sv, compile_lib, DataType, generate_cxx_binding, generate_sv_binding, Reference
 from importlib.util import find_spec
 import pytest
 import os
@@ -150,7 +150,45 @@ def test_sv_object_funcs_2(get_vector_filename, temp):
     tester.run()
 
 
+def test_sv_return_reference(get_vector_filename, temp):
+    # test out return reference
+    simulator = "xcelium"
+    avail, tester_cls = simulator_map[simulator]
+    if not avail():
+        pytest.skip(simulator + " is not available")
+
+    @sv(return_type=Reference(a=DataType.Int, b=DataType.Int))
+    def set_value():
+        return 42, 43
+
+    lib_path = compile_lib([set_value], cwd=temp)
+    sv_pkg = os.path.join(os.path.abspath(temp), "pysv_pkg.sv")
+    generate_sv_binding([set_value], filename=sv_pkg)
+    tb_file = get_vector_filename("test_sv_return_reference.sv")
+
+    tester = tester_cls(lib_path, sv_pkg, tb_file, cwd=temp)
+    tester.run()
+
+
+def test_verilator_return_reference(get_vector_filename, temp):
+    @sv(return_type=Reference(a=DataType.UInt, b=DataType.UInt))
+    def set_value():
+        return 42, 43
+
+    lib_path = compile_lib([set_value], cwd=temp)
+    header_file = os.path.join(os.path.abspath(temp), "test_verilator_return_ref.hh")
+    generate_cxx_binding([set_value], filename=header_file)
+
+    # we have three files
+    # the sv file, the driver file, and the header
+    sv_file = get_vector_filename("test_verilator_return_ref.sv")
+    driver = get_vector_filename("test_verilator_return_ref.cc")
+    # just run teh verilator
+    tester = pysv.util.VerilatorTester(lib_path, sv_file, header_file, driver, cwd=temp)
+    tester.run()
+
+
 if __name__ == "__main__":
     from conftest import get_vector_filename_fn
-    test_sv_object_funcs_2(get_vector_filename_fn, "temp")
+    test_verilator_return_reference(get_vector_filename_fn, "temp")
 
