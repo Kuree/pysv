@@ -1,4 +1,4 @@
-from pysv import compile_lib, sv, DataType
+from pysv import compile_lib, sv, DataType, Reference
 import os
 from pysv.compile import compile_and_run
 
@@ -166,5 +166,41 @@ pysv_finalize();
     assert value == 42
 
 
+def test_function_output_ref1(temp):
+    @sv(return_type=Reference(a=DataType.Int))
+    def func_output():
+        return 42
+
+    lib_file = compile_lib([func_output], cwd=temp)
+    cxx_code = """
+using namespace pysv;
+int a;
+func_output(&a);
+printf("%d", a);
+pysv_finalize();
+"""
+    value = compile_and_run(lib_file, cxx_code, temp, [func_output], use_implementation=True)
+    value = int(value)
+    assert value == 42
+
+
+def test_function_output_ref2(temp):
+    @sv(return_type=Reference(a=DataType.Int, b=DataType.Int))
+    def func_output():
+        return 42, 43
+
+    lib_file = compile_lib([func_output], cwd=temp)
+    cxx_code = """
+using namespace pysv;
+int a, b;
+func_output(&a, &b);
+printf("%d\\n%d", a, b);
+pysv_finalize();
+"""
+    value = compile_and_run(lib_file, cxx_code, temp, [func_output], use_implementation=True)
+    values = [int(v) for v in value.split()]
+    assert values[0] == 42 and values[1] == 43;
+
+
 if __name__ == "__main__":
-    test_cxx_object_funcs_2("temp")
+    test_function_output_ref2("temp")

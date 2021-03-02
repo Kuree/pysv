@@ -15,3 +15,8 @@ class DataType(enum.Enum):
     String = "string"
     # only for return type
     Void = "void"
+
+
+class Reference:
+    def __init__(self, **kwargs):
+        self.kwargs = kwargs

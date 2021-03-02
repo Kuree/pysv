@@ -1,7 +1,7 @@
 import inspect
 import abc
 from typing import Dict, List, Union, Callable
-from .types import DataType
+from .types import DataType, Reference
 from .frame import _inspect_frame, _get_import_name
 from .pyast import get_function_src, get_class_src, has_return
 
@@ -22,6 +22,7 @@ class Function:
         self.imports: Dict[str, str] = {}
         self.__func_name = ""
         self.arg_names: List[str] = []
+        self.output_names: List[str] = []
         self.arg_types: Dict[str, DataType] = {}
         self.return_type = DataType.Void
         self.parent_class: Union[type, None] = None
@@ -49,15 +50,22 @@ class Function:
 
 
 class DPIFunction(Function):
-    def __init__(self, return_type: Union[DataType, type] = DataType.Int, imports=None, **arg_types):
+    def __init__(self, return_type: Union[DataType, type, Reference] = DataType.Int, imports=None, **arg_types):
         super().__init__()
         self.func = None
-        if not isinstance(return_type, DataType) and not isinstance(return_type, type):
+        if not isinstance(return_type, DataType) and not isinstance(return_type, type) and not isinstance(return_type,
+                                                                                                          Reference):
             # someone didn't use preferred (). luckily we still support it
             assert hasattr(return_type, "__name__"), "Function does not have __name__"
             self.__call__(return_type)
         else:
             self.return_type = self.__check_arg_type("", return_type)
+            # compute output names
+            if isinstance(return_type, Reference):
+                for arg_name, arg_type in return_type.kwargs.items():
+                    assert isinstance(arg_type, DataType) and arg_type not in {DataType.Void, DataType.Object}
+                    self.output_names.append(arg_name)
+                    self.arg_types[arg_name] = arg_type
             assert isinstance(self.return_type, DataType), "Return type has to be of " + DataType.__name__
         if imports is None:
             self.imports = _inspect_frame()
@@ -71,9 +79,9 @@ class DPIFunction(Function):
         # check arg types
         for t in arg_types.values():
             assert isinstance(t, (DataType, type))
-        self.arg_types = {}
         for name, t in arg_types.items():
             t = self.__check_arg_type(name, t)
+            assert name not in self.arg_types, "Invalid arg name " + name
             self.arg_types[name] = t
         for t in self.arg_types.values():
             assert isinstance(t, DataType)
@@ -112,6 +120,11 @@ class DPIFunction(Function):
             else:
                 self.return_obj_ref = arg_type
             arg_type = DataType.Object
+        elif isinstance(arg_type, Reference):
+            arg_type = DataType.Void
+            assert len(arg_name) == 0
+            self.return_obj_ref = None
+
         return arg_type
 
     def get_func_src(self, check_sv_decorator: bool = True):

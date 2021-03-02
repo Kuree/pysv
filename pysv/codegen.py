@@ -80,6 +80,12 @@ def generate_dpi_signature(func_def: Union[Function, DPIFunctionCall],
         else:
             arg_type_str = arg_type.value
         args.append("input {0} {1}".format(arg_type_str, arg_name))
+    # notice that we generate output at the end
+    for arg_name in func_def.output_names:
+        # we only allow primitive data types for return reference type
+        arg_type = func_def.arg_types[arg_name]
+        arg_type_str = arg_type.value
+        args.append("output {0} {1}".format(arg_type_str, arg_name))
 
     # additional signature for ref ctor
     if is_class and len(ref_ctor_name) > 0 and func_def.is_init:
@@ -319,6 +325,11 @@ def get_c_function_signature(func_def: Union[Function, DPIFunctionCall], pretty_
         else:
             t_str = get_c_type_str(t)
         args.append("{0} {1}".format(t_str, name))
+    # generate output args
+    for name in func_def.output_names:
+        t = func_def.arg_types[name]
+        t_str = get_c_type_str(t)
+        args.append("{0} *{1}".format(t_str, name))
     arg_str = padding.join(args)
     result = "{0}{1})".format(result, arg_str)
     if split_return_type:
@@ -400,8 +411,24 @@ def generate_return_value(func_def: Union[Function, DPIFunctionCall]):
     # value to avoid memory leak
     return_type = func_def.return_type
     if return_type == DataType.Void:
-        # nothing to be done for void return type
-        return ""
+        # we have some complication here
+        # if the user is returning a reference, we need to unpack the tuple and set the value properly
+        if len(func_def.output_names) == 1:
+            t_str = get_c_type_str(func_def.arg_types[func_def.output_names[0]])
+            result += __INDENTATION + '*{0} = locals["__result"].cast<{1}>();\n'.format(func_def.output_names[0], t_str)
+        elif len(func_def.output_names) > 1:
+            result += __INDENTATION + 'auto ref_result = locals["__result"].cast<py::list>();\n'
+            # generate error checking at runtime
+            result += __INDENTATION + 'if (py::len(ref_result) != {0}) {{\n'.format(len(func_def.output_names))
+            result += __INDENTATION * 2 + 'throw std::runtime_error("Invalid return tuple size");\n'
+            result += __INDENTATION + "}\n"
+            # now generate the value setting part
+            for idx, arg_name in enumerate(func_def.output_names):
+                t_str = get_c_type_str(func_def.arg_types[arg_name])
+                result += __INDENTATION + '*{0} = ref_result[{1}].cast<{2}>();\n'.format(arg_name, idx, t_str)
+        else:
+            # nothing to be done for void return type
+            return ""
     elif return_type == DataType.String:
         # special care for string
         result += __INDENTATION + '{0} = locals["__result"].cast<std::string>();\n'.format(__GLOBAL_STRING_VAR_NAME)
