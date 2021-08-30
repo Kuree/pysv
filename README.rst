@@ -7,6 +7,8 @@ pysv: Running Python Code in SystemVerilog
 to be written in Python and then executed inside standard SystemVerilog
 simulators, via DPI.
 
+Documentation is `here`_.
+
 Core Features
 -------------
 
@@ -111,3 +113,4 @@ Now we can use the class directly with the SystemVerilog binding:
   :target: https://buildkite.com/stanford-aha/pysv
 .. |PyPI package| image:: https://img.shields.io/pypi/v/pysv?color=blue
   :target: https://pypi.org/project/pysv/
+.. _here: https://pysv.readthedocs.io/index.html

@@ -3,17 +3,17 @@
 Use pysv with SystemVerilog
 ===========================
 
-This sections will cover usages with common SystemVerilog simulators.
-Too see how to generate SystemVerilog binding with classes,
+This section covers usages with common SystemVerilog simulators.
+To see how to generate SystemVerilog binding with classes,
 please refer to :ref:`sv-binding` and :doc:`oop`.
 
 Cadence® Xcelium™
 -----------------
 
 In your file list, make sure that the binding package is loaded before the
-file that uses it. You need `-sv_lib` switch to tell the simulator to load
+files that use it. You need `-sv_lib` switch to tell the simulator to load
 the compiled binary. Here is an example of ``xrun`` command if you use
-default names:
+the default names:
 
 .. code-block::
 
