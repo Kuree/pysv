@@ -262,6 +262,10 @@ def get_c_type_str(data_type: DataType):  # pragma: no cover
         return "void*"
     elif data_type == DataType.String:
         return "const char*"
+    elif data_type == DataType.Float:
+        return "float"
+    elif data_type == DataType.Double:
+        return "double"
     elif data_type == DataType.Void:
         return "void"
     else:

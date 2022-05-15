@@ -34,6 +34,22 @@ def test_str(temp):
     assert outputs[1] == "test " * (4 + 1)
 
 
+def test_float(temp):
+    @sv(f=DataType.Float, return_type=DataType.Double)
+    def mul_floats(f):
+        return f * 2.0
+
+    lib_file = compile_lib([mul_floats], cwd=temp)
+    code = """
+    auto res = mul_floats(21.1);
+    std::cout << res;
+    """
+
+    outputs = compile_and_run(lib_file, code, temp, [mul_floats])
+    outputs = outputs.splitlines()
+    assert outputs[0] == "42.2"
+
+
 def test_numpy(temp):
     import numpy as np
 
@@ -203,4 +219,4 @@ pysv_finalize();
 
 
 if __name__ == "__main__":
-    test_function_output_ref2("temp")
+    test_float("temp")

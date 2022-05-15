@@ -13,6 +13,8 @@ class DataType(enum.Enum):
     ULongInt = "longint unsigned"
     Object = "chandle"
     String = "string"
+    Float = "shortreal"
+    Double = "real"
     # only for return type
     Void = "void"
 
