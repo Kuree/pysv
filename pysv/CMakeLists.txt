@@ -14,7 +14,7 @@ target_link_libraries(${TARGET} PRIVATE pybind11::embed)
 
 set(SHARED_LIB_EXT ".so")
 
-add_compile_definitions(PYTHON_LIBRARY="${PYTHON_LIBRARY}")
+add_definitions(-DPYTHON_LIBRARY="${PYTHON_LIBRARY}")
 
 # use the default system suffix
 set_target_properties(${TARGET} PROPERTIES PREFIX ""
