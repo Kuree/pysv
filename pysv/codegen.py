@@ -673,7 +673,10 @@ def generate_cxx_class_method(func, is_class, class_name, pretty_print=True):
         args = arg_names
     if func.is_init:
         args = args[1:]
-    args = "{0}({1});".format(func_name, ", ".join(args))
+    if len(func.output_names) > 0 :
+        args = "{0}({1}, {2});".format(func_name, ", ".join(args), ", ".join(func.output_names))
+    else:
+        args = "{0}({1});".format(func_name, ", ".join(args))
     tokens = []
     if func.is_init:
         tokens.append(pointer_name)
