@@ -3,7 +3,7 @@ steps:
   commands:
   - source /cad/modules/tcl/init/sh
   - module load base
-  - module load vcs xcelium questa vivado/2020.1
+  - module load vcs xcelium questavivado/2022.1
   - cp -r /workdir /pysv
   - echo "--- Install requirements"
   - pip3 install --ignore-installed protobuf==3.20.1
