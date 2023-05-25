@@ -3,6 +3,11 @@
 #include <iostream>
 extern "C" {
 void* SomeClass_pysv_init();
+void SomeClass_add_sub(void* self,
+                       uint32_t a,
+                       uint32_t b,
+                       uint32_t *res_add,
+                       uint32_t *res_sub);
 void SomeClass_destroy(void* self);
 int32_t SomeClass_plus(void* self,
                        int32_t num);
@@ -24,6 +29,10 @@ public:
 class SomeClass : public PySVObject {
 public:
   SomeClass();
+  void add_sub(uint32_t a,
+               uint32_t b,
+               uint32_t *res_add,
+               uint32_t *res_sub);
   ~SomeClass() override;
   int32_t plus(int32_t num);
   void print_a();
