@@ -764,7 +764,9 @@ def generate_sv_class_method(func, pretty_print: bool = True, ref_ctor: bool = F
                 result += indentation + "obj__.{0} = ptr__;\n".format(chandle_name)
                 result += indentation + "return obj__;\n"
         else:
-            if func.return_type == DataType.Void:
+            if len(func.output_names) > 0 :
+                result += indentation + "{0}({1}, {2});\n".format(func.func_name, args, ", ".join(func.output_names))
+            elif func.return_type == DataType.Void:
                 result += indentation + "{0}({1});\n".format(func.func_name, args)
             else:
                 result += indentation + "return {0}({1});\n".format(func.func_name, args)
