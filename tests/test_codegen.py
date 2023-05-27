@@ -1,4 +1,4 @@
-from pysv import sv, DataType
+from pysv import sv, DataType, Reference
 from pysv.codegen import (get_python_src, generate_cxx_function, generate_c_header, generate_pybind_code,
                           generate_sv_binding, generate_cxx_binding, generate_dpi_signature)
 # all the module imports in this file should be local to avoid breaking assertions
@@ -75,6 +75,10 @@ class SomeClass:
     @sv()
     def plus(self, num):
         return num + 1
+    
+    @sv(a=DataType.UInt, b=DataType.UInt, return_type=Reference(res_add=DataType.UInt, res_sub=DataType.UInt))
+    def add_sub(self, a, b):
+        return (a+b, a-b)
 
 
 def test_generate_sv_binding(check_file):
@@ -86,6 +90,9 @@ def test_generate_cxx_binding(check_file):
     result = generate_cxx_binding([SomeClass])
     check_file(result, "test_generate_cxx_binding.cc")
 
+def test_generate_cxx_code_class(check_file):
+    result = generate_pybind_code([SomeClass])
+    check_file(result, "test_generate_cxx_code_class.cc")
 
 if __name__ == "__main__":
     test_generate_c_header()

@@ -2,6 +2,11 @@
 `define PYSV_PYSV
 package pysv;
 import "DPI-C" function chandle SomeClass_pysv_init();
+import "DPI-C" function void SomeClass_add_sub(input chandle self,
+                                               input int unsigned a,
+                                               input int unsigned b,
+                                               output int unsigned res_add,
+                                               output int unsigned res_sub);
 import "DPI-C" function void SomeClass_destroy(input chandle self);
 import "DPI-C" function int SomeClass_plus(input chandle self,
                                            input int num);
@@ -15,6 +20,12 @@ endclass
 class SomeClass extends PySVObject;
   function new();
     pysv_ptr = SomeClass_pysv_init();
+  endfunction
+  function void add_sub(input int unsigned a,
+                        input int unsigned b,
+                        output int unsigned res_add,
+                        output int unsigned res_sub);
+    SomeClass_add_sub(pysv_ptr, a, b, res_add, res_sub);
   endfunction
   function void destroy();
     SomeClass_destroy(pysv_ptr);

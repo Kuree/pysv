@@ -673,7 +673,10 @@ def generate_cxx_class_method(func, is_class, class_name, pretty_print=True):
         args = arg_names
     if func.is_init:
         args = args[1:]
-    args = "{0}({1});".format(func_name, ", ".join(args))
+    if len(func.output_names) > 0 :
+        args = "{0}({1}, {2});".format(func_name, ", ".join(args), ", ".join(func.output_names))
+    else:
+        args = "{0}({1});".format(func_name, ", ".join(args))
     tokens = []
     if func.is_init:
         tokens.append(pointer_name)
@@ -761,7 +764,9 @@ def generate_sv_class_method(func, pretty_print: bool = True, ref_ctor: bool = F
                 result += indentation + "obj__.{0} = ptr__;\n".format(chandle_name)
                 result += indentation + "return obj__;\n"
         else:
-            if func.return_type == DataType.Void:
+            if len(func.output_names) > 0 :
+                result += indentation + "{0}({1}, {2});\n".format(func.func_name, args, ", ".join(func.output_names))
+            elif func.return_type == DataType.Void:
                 result += indentation + "{0}({1});\n".format(func.func_name, args)
             else:
                 result += indentation + "return {0}({1});\n".format(func.func_name, args)
