@@ -3,7 +3,7 @@ import shutil
 import subprocess
 import os
 import abc
-import distutils.sysconfig as sysconfig
+import sysconfig
 
 
 def is_conda():
@@ -36,7 +36,7 @@ def should_add_sys_path(func_defs):
         else:
             defs.append(func_def)
     # get all the standard lib names
-    std_lib = sysconfig.get_python_lib(standard_lib=True)
+    std_lib = sysconfig.get_paths()["stdlib"]
     modules = set()
     for top in os.listdir(std_lib):
         if os.path.isdir(top):
