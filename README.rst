@@ -20,6 +20,7 @@ features:
 -  Foreign modules, e.g. ``numpy`` or ``tensorflow``.
 -  Python functions
 -  Python classes
+-  Numpy array view of SV open array
 -  Platform-independent compilation
 
 Supported Simulators
@@ -102,6 +103,24 @@ Now we can use the class directly with the SystemVerilog binding:
     assert(!a.exists(2));
     // numpy under the hood!
     assert(a.min() == 1);
+
+
+To use an array as a function argument, use `DataType.IntArray`.
+As the name indicates, pysv currently only support `int32_t` arrays of any
+dimension. More data types supports will be worked on in the future.
+Here is an example of how to use it in Python:
+
+.. code:: python
+
+    @sv(a=DataType.IntArray)
+    def set_value(a):
+        print(a)
+        a[2] = 42
+
+
+It is implemented via `py::memoryview`, which offers a mutable view of a raw
+array of any dimension. `pysv` assumes row-major ordering of the underlying
+multi-dimensional array.
 
 
 .. _pybind11: https://github.com/pybind/pybind11
