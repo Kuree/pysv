@@ -67,6 +67,7 @@ class DPIFunction(Function):
                     self.output_names.append(arg_name)
                     self.arg_types[arg_name] = arg_type
             assert isinstance(self.return_type, DataType), "Return type has to be of " + DataType.__name__
+            assert self.return_type != DataType.IntArray, "Returning an array is not supported"
         if imports is None:
             self.imports = _inspect_frame()
         else:

@@ -2,21 +2,23 @@ import enum
 
 
 class DataType(enum.Enum):
-    Bit = "bit"
-    Byte = "byte"
-    ShortInt = "shortint"
-    Int = "int"
-    LongInt = "longint"
-    UByte = "byte unsigned"
-    UShortInt = "shortint unsigned"
-    UInt = "int unsigned"
-    ULongInt = "longint unsigned"
-    Object = "chandle"
-    String = "string"
-    Float = "shortreal"
-    Double = "real"
+    Bit = enum.auto()
+    Byte = enum.auto()
+    ShortInt = enum.auto()
+    Int = enum.auto()
+    LongInt = enum.auto()
+    UByte = enum.auto()
+    UShortInt = enum.auto()
+    UInt = enum.auto()
+    ULongInt = enum.auto()
+    Object = enum.auto()
+    String = enum.auto()
+    Float = enum.auto()
+    Double = enum.auto()
     # only for return type
-    Void = "void"
+    Void = enum.auto()
+    # the only array type supported
+    IntArray = enum.auto()
 
 
 class Reference:

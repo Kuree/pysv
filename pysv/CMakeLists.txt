@@ -12,6 +12,9 @@ endif()
 
 target_link_libraries(${TARGET} PRIVATE pybind11::embed)
 
+# include the sv lib directory
+target_include_directories(${TARGET} PRIVATE ${DPI_HEADER_DIR})
+
 set(SHARED_LIB_EXT ".so")
 
 add_definitions(-DPYTHON_LIBRARY="${PYTHON_LIBRARY}")

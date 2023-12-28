@@ -45,6 +45,16 @@ def __should_include_local_object(func_defs):
     return False
 
 
+def __should_include_buffer_impl(func_defs):
+    func_defs = __get_func_defs(func_defs)
+    for func_def in func_defs:
+        func_def = __get_func_def(func_def)
+        for input_type in func_def.arg_types.values():
+            if input_type == DataType.IntArray:
+                return True
+    return False
+
+
 def __get_conda_path():
     result = ""
     if is_conda():
@@ -56,6 +66,45 @@ def __get_conda_path():
         result += "std::string conda_python_home;\n"
         result += "std::string conda_python_path;\n"
     return result
+
+
+def __is_array(t: DataType):
+    return t == DataType.IntArray
+
+def __get_dpi_data_type(t: DataType):
+    if t == DataType.Bit:
+        return "bit"
+    elif t == DataType.Byte:
+        return "byte"
+    elif t == DataType.ShortInt:
+        return "shortint"
+    elif t == DataType.Int:
+        return "int"
+    elif t == DataType.LongInt:
+        return "longint"
+    elif t == DataType.UByte:
+        return "byte unsigned"
+    elif t == DataType.UShortInt:
+        return "shortint unsigned"
+    elif t == DataType.UInt:
+        return "int unsigned"
+    elif t == DataType.ULongInt:
+        return "longint unsigned"
+    elif t == DataType.Object:
+        return "chandle"
+    elif t == DataType.String:
+        return "string"
+    elif t == DataType.Float:
+        return "shortreal"
+    elif t == DataType.Double:
+        return "real"
+    # only for return type
+    elif t == DataType.Void:
+        return "void"
+    # the only array type supported
+    elif t == DataType.IntArray:
+        return "int"
+    raise ValueError("Unknown type")
 
 
 def generate_dpi_signature(func_def: Union[Function, DPIFunctionCall],
@@ -78,14 +127,14 @@ def generate_dpi_signature(func_def: Union[Function, DPIFunctionCall],
             else:
                 arg_type_str = __PYSV_OBJECT_BASE
         else:
-            arg_type_str = arg_type.value
-        args.append("input {0} {1}".format(arg_type_str, arg_name))
+            arg_type_str = __get_dpi_data_type(arg_type)
+        args.append("input {0} {1}{2}".format(arg_type_str, arg_name, "[]" if __is_array(arg_type) else ""))
     # notice that we generate output at the end
     for arg_name in func_def.output_names:
         # we only allow primitive data types for return reference type
         arg_type = func_def.arg_types[arg_name]
-        arg_type_str = arg_type.value
-        args.append("output {0} {1}".format(arg_type_str, arg_name))
+        arg_type_str = __get_dpi_data_type(arg_type)
+        args.append("output {0} {1}{2}".format(arg_type_str, arg_name, "[]" if __is_array(arg_type) else ""))
 
     # additional signature for ref ctor
     if is_class and len(ref_ctor_name) > 0 and func_def.is_init:
@@ -104,7 +153,7 @@ def generate_dpi_signature(func_def: Union[Function, DPIFunctionCall],
         else:
             return_type_str = __PYSV_OBJECT_BASE
     else:
-        return_type_str = func_def.return_type.value
+        return_type_str = __get_dpi_data_type(func_def.return_type)
 
     if is_class:
         if func_def.is_init:
@@ -268,6 +317,9 @@ def get_c_type_str(data_type: DataType):  # pragma: no cover
         return "double"
     elif data_type == DataType.Void:
         return "void"
+    elif data_type == DataType.IntArray:
+        # dpi open aray type
+        return "svOpenArrayHandle"
     else:
         raise ValueError(data_type)
 
@@ -359,6 +411,8 @@ def generate_local_variables(func_def: Union[Function, DPIFunctionCall]):
         arg_type = func_def.arg_types[n]
         if arg_type == DataType.Object and not (idx == 0 and func_def.parent_class is not None):
             s = __INDENTATION + __GET_LOCAL_OBJECT + '("{0}", {1}, locals);\n'.format(str_name, n)
+        elif __is_array(arg_type):
+            s = __INDENTATION + 'locals["{0}"] = to_buffer({1});\n'.format(str_name, n)
         else:
             s = __INDENTATION + 'locals["{0}"] = {1};\n'.format(str_name, n)
         result += s
@@ -486,7 +540,7 @@ def generate_sys_path_values(pretty_print=True):
 
 
 def generate_bootstrap_code(pretty_print=True, add_sys_path=True, add_class=True, add_imports=True,
-                            add_local_object=True):
+                            add_local_object=True, add_buffer_impl=False):
     result = __get_code_snippet("include_header.hh")
     result += __get_code_snippet("runtime_values.cc")
 
@@ -505,6 +559,8 @@ def generate_bootstrap_code(pretty_print=True, add_sys_path=True, add_class=True
         result += __get_code_snippet("import_global.cc")
     if add_local_object:
         result += __get_code_snippet("get_local_object.cc")
+    if add_buffer_impl:
+        result += __get_code_snippet("buffer_impl.cc")
 
     return result
 
@@ -544,8 +600,10 @@ def generate_pybind_code(func_defs: List[Union[type, DPIFunctionCall]], pretty_p
         add_sys_path = should_add_sys_path(func_defs)
     add_imports = __has_imports(func_defs)
     add_local_object = __should_include_local_object(func_defs)
+    add_buffer_impl = __should_include_buffer_impl(func_defs)
     result = generate_bootstrap_code(pretty_print, add_sys_path=add_sys_path, add_class=add_class,
-                                     add_imports=add_imports, add_local_object=add_local_object) + "\n"
+                                     add_imports=add_imports, add_local_object=add_local_object,
+                                     add_buffer_impl=add_buffer_impl) + "\n"
     # generate extern C block
     result += 'extern "C" {\n'
     code_blocks = []

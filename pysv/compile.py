@@ -22,6 +22,7 @@ def compile_lib(func_defs, cwd, lib_name="pysv", pretty_print=True, release_buil
     # need to copy stuff over
     root_dir = os.path.dirname(__file__)
     pybind_path = os.path.join(root_dir, "extern", "pybind11")
+    vlstd_path = os.path.join(root_dir, "extern", "vlstd")
     assert os.path.isdir(pybind_path)
     # copy that to cwd if it doesn't exist
     pybind_path_dst = os.path.join(cwd, "pybind11")
@@ -58,6 +59,8 @@ def compile_lib(func_defs, cwd, lib_name="pysv", pretty_print=True, release_buil
         else:
             build_type = "Debug"
         cmake_args.append("-DCMAKE_BUILD_TYPE=" + build_type)
+    # add header definition
+    cmake_args.append("-DDPI_HEADER_DIR=" + vlstd_path)
     subprocess.check_call(["cmake"] + cmake_args + [".."],
                           cwd=build_dir)
     # built it!

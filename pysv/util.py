@@ -172,7 +172,7 @@ class Tester:
 
     def _run(self, args, cwd, env, blocking):
         if blocking:
-            subprocess.check_call(args, cwd=cwd, env=env)
+            return subprocess.check_output(args, cwd=cwd, env=env)
         else:
             p = subprocess.Popen(args, cwd=cwd, env=env)
             self.__process.append(p)
@@ -218,7 +218,7 @@ class VerilatorTester(Tester):
                               cwd=self.cwd, env=env)
         # run the application
         name = os.path.join("obj_dir", mk_file.replace(".mk", ""))
-        self._run([name], self.cwd, env, blocking)
+        return self._run([name], self.cwd, env, blocking)
 
 
 class CadenceTester(Tester):

@@ -218,5 +218,16 @@ pysv_finalize();
     assert values[0] == 42 and values[1] == 43;
 
 
+def test_buffer_int(temp):
+    @sv(return_type=DataType.Void, a=DataType.IntArray)
+    def foo(a):
+        a[0] = 2
+
+    # because we lack of dpi implementaiotn, we only test out
+    # and see if we can compile it
+    lib_file = compile_lib([foo], cwd=temp)
+    assert os.path.exists(lib_file)
+
+
 if __name__ == "__main__":
-    test_float("temp")
+    test_buffer_int("temp")

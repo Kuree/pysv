@@ -1,3 +1,6 @@
 [submodule "extern/pybind11"]
 	path = pysv/extern/pybind11
 	url = https://github.com/pybind/pybind11
+[submodule "pysv/extern/vlstd"]
+	path = pysv/extern/vlstd
+	url = https://github.com/Kuree/vlstd

@@ -189,7 +189,30 @@ def test_verilator_return_reference(get_vector_filename, temp):
     tester.run()
 
 
+@pytest.mark.skipif(not pysv.util.is_verilator_available(), reason="Verilator not available")
+def test_verilator_array(get_vector_filename, temp):
+    @sv(a=DataType.IntArray)
+    def set_value(a):
+        print(a[2])
+        a[2] = 42
+
+    lib_path = compile_lib([set_value], cwd=temp)
+    header_file = os.path.join(os.path.abspath(temp), "test_verilator_array.hh")
+    generate_cxx_binding([set_value], filename=header_file)
+    sv_pkg = os.path.join(os.path.abspath(temp), "pysv_pkg.sv")
+    generate_sv_binding([set_value], filename=sv_pkg)
+
+    # we have three files
+    # the sv file, the driver file, and the header
+    sv_file = get_vector_filename("test_verilator_array.sv")
+    driver = get_vector_filename("test_verilator_array.cc")
+    # just run the verilator
+    tester = pysv.util.VerilatorTester(lib_path, sv_file, header_file, driver, cwd=temp)
+    out = tester.run().decode("ascii")
+    assert out == "2\n42\n"
+
+
 if __name__ == "__main__":
     from conftest import get_vector_filename_fn
-    test_verilator_return_reference(get_vector_filename_fn, "temp")
+    test_verilator_array(get_vector_filename_fn, "temp")
 
