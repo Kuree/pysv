@@ -18,7 +18,7 @@ for f in Path(os.path.join(current_directory, "pysv")).rglob("*"):
 
 setup(
     name='pysv',
-    version='0.2.0',
+    version='0.3.0',
     author='Keyi Zhang',
     author_email='keyi@cs.stanford.edu',
     long_description=long_description,
