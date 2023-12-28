@@ -112,6 +112,13 @@ Whereas in C/C++ we will see the following function definition:
 Notice that your function can take normal input arguments. All the output arguments will be
 generated after the inputs.
 
+
+If we want to pass a SystemVerilog open array to Python and used in libraries such as numpy,
+you can use ``DataType.IntArray``. Currently only ``int32_t`` type is supported. Because it
+uses ``py::memoryview`` under the hood, the array will not be coppied. Instead, it is
+accessed via a multable array view. As a result, the system can handle arbitrary number of
+dimensions.
+
 Library compilation
 -------------------
 In order to use pysv in your testbench, you first need to compile the python

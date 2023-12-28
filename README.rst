@@ -105,8 +105,8 @@ Now we can use the class directly with the SystemVerilog binding:
     assert(a.min() == 1);
 
 
-To use an array as a function argument, use `DataType.IntArray`.
-As the name indicates, pysv currently only support `int32_t` arrays of any
+To use an array as a function argument, use ``DataType.IntArray``.
+As the name indicates, pysv currently only support ``int32_t`` arrays of any
 dimension. More data types supports will be worked on in the future.
 Here is an example of how to use it in Python:
 
