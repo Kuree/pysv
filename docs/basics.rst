@@ -115,9 +115,28 @@ generated after the inputs.
 
 If we want to pass a SystemVerilog open array to Python and used in libraries such as numpy,
 you can use ``DataType.IntArray``. Currently only ``int32_t`` type is supported. Because it
-uses ``py::memoryview`` under the hood, the array will not be coppied. Instead, it is
+uses ``py::memoryview`` under the hood, the array will not be copied. Instead, it is
 accessed via a multable array view. As a result, the system can handle arbitrary number of
 dimensions.
+
+To use a multidimensional array, You can specify the number dimension using the following
+syntax:
+
+.. code-block:: Python
+
+   DataType.IntArray[4]
+
+
+which produces a 4-D array. To use it in python, you need to use tuple-based indexing,
+e.g. ``array[2, 3, 4, 5]``. Unfortunately CPython does not implement slicing of a subview.
+If modifying the array is not required, you can convert the array into a numpy array via
+
+.. code-block:: Python
+
+  numpy_array = numpy.array(array)
+
+
+However, doing so makes a copy of the array and you need to write back the changes.
 
 Library compilation
 -------------------

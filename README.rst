@@ -118,11 +118,11 @@ Here is an example of how to use it in Python:
         a[2] = 42
 
 
-It is implemented via `py::memoryview`, which offers a mutable view of a raw
-array of any dimension. `pysv` assumes row-major ordering of the underlying
+It is implemented via ``py::memoryview``, which offers a mutable view of a raw
+array of any dimension. ``pysv`` assumes row-major ordering of the underlying
 multi-dimensional array. To use multi-dimensional array, use
 ``DataType.IntArray[n]``, where ``n`` is the number of dimension, e.g.
-```DataType.IntArray[2]``` creates a 2-D array. Note that due to the usage
+``DataType.IntArray[2]`` creates a 2-D array. Note that due to the usage
 of Python ``memoryview``, only numpy style indexing is supported, e.g.
 ``a[1, 2]``. To see more details, please check out the `CPython discussion`_.
 If you don't need to modify the underlying array, you can use ``numpy`` to
