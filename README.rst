@@ -120,7 +120,13 @@ Here is an example of how to use it in Python:
 
 It is implemented via `py::memoryview`, which offers a mutable view of a raw
 array of any dimension. `pysv` assumes row-major ordering of the underlying
-multi-dimensional array.
+multi-dimensional array. To use multi-dimensional array, use
+``DataType.IntArray[n]``, where ``n`` is the number of dimension, e.g.
+```DataType.IntArray[2]``` creates a 2-D array. Note that due to the usage
+of Python ``memoryview``, only numpy style indexing is supported, e.g.
+``a[1, 2]``. To see more details, please check out the `CPython discussion`_.
+If you don't need to modify the underlying array, you can use ``numpy`` to
+convert the data to a numpy array for further processing.
 
 
 .. _pybind11: https://github.com/pybind/pybind11
@@ -133,3 +139,4 @@ multi-dimensional array.
 .. |PyPI package| image:: https://img.shields.io/pypi/v/pysv?color=blue
   :target: https://pypi.org/project/pysv/
 .. _here: https://pysv.readthedocs.io/index.html
+.. _CPython discussion: https://github.com/python/cpython/issues/67820
