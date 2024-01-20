@@ -4,14 +4,16 @@ module test_verilator_array();
 
 import pysv::*;
 
-int a[3:0];
+int a[3:0][3:0];
 
 initial begin
   for (int i = 0; i < 4; i++) begin
-    a[i] = 2;
+    for (int j = 0; j < 4; j++) begin
+      a[i][j] = 2;
+    end
   end
   set_value(a);
-  $display("%0d", a[2]);
+  $display("%0d", a[2][1]);
 end
 
 endmodule

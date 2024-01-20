@@ -20,6 +20,21 @@ class DataType(enum.Enum):
     # the only array type supported
     IntArray = enum.auto()
 
+    def __new__(cls, *args, **kargs):
+        obj = object.__new__(cls)
+        obj._value_ = args[0]
+        return obj
+
+    def __init__(self, _):
+        self.dim = 1
+
+    def __getitem__(self, dim: int):
+        assert self == DataType.IntArray, "Only Int array allowed to have dimensions"
+        assert isinstance(dim, int), "Array dim must be an integer"
+        res = DataType.IntArray
+        res.dim = dim
+        return res
+
 
 class Reference:
     def __init__(self, **kwargs):

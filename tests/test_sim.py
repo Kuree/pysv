@@ -191,10 +191,10 @@ def test_verilator_return_reference(get_vector_filename, temp):
 
 @pytest.mark.skipif(not pysv.util.is_verilator_available(), reason="Verilator not available")
 def test_verilator_array(get_vector_filename, temp):
-    @sv(a=DataType.IntArray)
+    @sv(a=DataType.IntArray[2])
     def set_value(a):
-        print(a[2])
-        a[2] = 42
+        print(a[2][1])
+        a[2][1] = 42
 
     lib_path = compile_lib([set_value], cwd=temp)
     header_file = os.path.join(os.path.abspath(temp), "test_verilator_array.hh")

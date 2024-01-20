@@ -71,6 +71,7 @@ def __get_conda_path():
 def __is_array(t: DataType):
     return t == DataType.IntArray
 
+
 def __get_dpi_data_type(t: DataType):
     if t == DataType.Bit:
         return "bit"
@@ -128,7 +129,8 @@ def generate_dpi_signature(func_def: Union[Function, DPIFunctionCall],
                 arg_type_str = __PYSV_OBJECT_BASE
         else:
             arg_type_str = __get_dpi_data_type(arg_type)
-        args.append("input {0} {1}{2}".format(arg_type_str, arg_name, "[]" if __is_array(arg_type) else ""))
+        args.append("input {0} {1}{2}".format(arg_type_str, arg_name,
+                                              "[]" * arg_type.dim if __is_array(arg_type) else ""))
     # notice that we generate output at the end
     for arg_name in func_def.output_names:
         # we only allow primitive data types for return reference type
@@ -731,7 +733,7 @@ def generate_cxx_class_method(func, is_class, class_name, pretty_print=True):
         args = arg_names
     if func.is_init:
         args = args[1:]
-    if len(func.output_names) > 0 :
+    if len(func.output_names) > 0:
         args = "{0}({1}, {2});".format(func_name, ", ".join(args), ", ".join(func.output_names))
     else:
         args = "{0}({1});".format(func_name, ", ".join(args))
@@ -822,7 +824,7 @@ def generate_sv_class_method(func, pretty_print: bool = True, ref_ctor: bool = F
                 result += indentation + "obj__.{0} = ptr__;\n".format(chandle_name)
                 result += indentation + "return obj__;\n"
         else:
-            if len(func.output_names) > 0 :
+            if len(func.output_names) > 0:
                 result += indentation + "{0}({1}, {2});\n".format(func.func_name, args, ", ".join(func.output_names))
             elif func.return_type == DataType.Void:
                 result += indentation + "{0}({1});\n".format(func.func_name, args)

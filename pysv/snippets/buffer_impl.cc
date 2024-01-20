@@ -12,7 +12,7 @@ py::memoryview to_buffer(const svOpenArrayHandle array_handle) {
         throw std::runtime_error("Array type does not have native C representation");
     }
     auto dim = svDimensions(array_handle);
-    for (auto i = 0; i < dim; i++) {
+    for (auto i = 1; i <= dim; i++) {
         auto s = svSize(array_handle, i);
         sizes.emplace_back(s);
     }

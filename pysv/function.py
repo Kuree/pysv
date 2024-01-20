@@ -79,6 +79,7 @@ class DPIFunction(Function):
 
         # check arg types
         for t in arg_types.values():
+            print(type(t), t)
             assert isinstance(t, (DataType, type))
         for name, t in arg_types.items():
             t = self.__check_arg_type(name, t)
