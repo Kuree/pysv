@@ -54,8 +54,7 @@ jobs:
         path: dist/
     - name: Publish distribution 📦 to PyPI
       if: startsWith(github.ref, 'refs/tags') && matrix.os == 'ubuntu-latest' && matrix.python-version == '3.8'
-      uses: pypa/gh-action-pypi-publish@master
+      uses: pypa/gh-action-pypi-publish@release/v1
       with:
-        user: keyi
-        password: ${{ secrets.PYPI_PASSWORD }}
+        password: ${{ secrets.PYPI_API_TOKEN }}
         skip_existing: true
