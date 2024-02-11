@@ -27,8 +27,8 @@ def check_class_ctor(cls: type):
         # it's a normal init ctor
         # make sure that it doesn't have any extra parameters
         signature = inspect.signature(ctor)
-        assert len(signature.parameters) == 1, """Class constructor has more arguments than simple
-self is required to have @sv decorator"""
+        assert len(signature.parameters) == 1, """Class {0} constructor with more arguments than simple
+self is required to have @sv decorator""".format(cls.__name__)
         # generate a wrapper
 
         # need to be careful about the imports. seems all the functions have the same scope, we pick the one
