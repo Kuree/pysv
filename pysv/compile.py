@@ -4,6 +4,7 @@ import os
 import shutil
 import platform
 import filecmp
+import sys
 
 
 def compile_lib(func_defs, cwd, lib_name="pysv", pretty_print=True, release_build=False, clean_up_build=False,
@@ -61,6 +62,8 @@ def compile_lib(func_defs, cwd, lib_name="pysv", pretty_print=True, release_buil
         cmake_args.append("-DCMAKE_BUILD_TYPE=" + build_type)
     # add header definition
     cmake_args.append("-DDPI_HEADER_DIR=" + vlstd_path)
+    # tell cmake where to find python (in case it's not in the system path)
+    cmake_args.append("-DPYTHON_EXECUTABLE=" + sys.executable)
     subprocess.check_call(["cmake"] + cmake_args + [".."],
                           cwd=build_dir)
     # built it!
