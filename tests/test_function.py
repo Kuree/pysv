@@ -1,4 +1,4 @@
-from pysv import sv, DataType, is_run_function_set, set_run_function
+from pysv import sv, DataType, is_run_function_set, set_run_function, import_
 
 
 def test_frame_import():
@@ -116,5 +116,13 @@ def test_no_call_sv():
     assert isinstance(foo, sv)
 
 
+def test_import():
+    @import_
+    def foo(a):
+        pass
+
+    assert isinstance(foo, import_)
+
+
 if __name__ == "__main__":
-    test_no_call_sv()
+    test_import()

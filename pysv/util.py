@@ -192,14 +192,19 @@ class Tester:
 
 
 class VerilatorTester(Tester):
-    def __init__(self, lib_path, *files: str, cwd=None, clean_up_run=False):
+    def __init__(self, lib_path, *files: str, cwd=None, clean_up_run=False, flags=None):
         super().__init__(lib_path, *files, cwd=cwd, clean_up_run=clean_up_run)
+        if not flags:
+            self.flags = []
+        else:
+            self.flags = flags
 
     def run(self, blocking=True):
         # compile it first
         verilator = shutil.which("verilator")
         args = [verilator, "--cc", "--exe"]
         args += self.files + [os.path.abspath(self.lib_path), "-Wno-fatal"]
+        args += self.flags
         subprocess.check_call(args, cwd=self.cwd)
         # symbolic link it first
         env = self._set_lib_env()

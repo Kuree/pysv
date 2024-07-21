@@ -1,6 +1,6 @@
-from pysv import sv, DataType, Reference
+from pysv import sv, DataType, Reference, import_
 from pysv.codegen import (get_python_src, generate_cxx_function, generate_c_header, generate_pybind_code,
-                          generate_sv_binding, generate_cxx_binding, generate_dpi_signature)
+                          generate_sv_binding, generate_cxx_binding, generate_dpi_signature, generate_pybind_function)
 # all the module imports in this file should be local to avoid breaking assertions
 
 
@@ -59,6 +59,12 @@ def test_generate_dpi_header(check_file):
     result = generate_dpi_signature(simple_func, pretty_print=False)
     assert result == 'import "DPI-C" function int simple_func(input int a, input int b, input int c);'
 
+    @import_
+    def simple_func_import(a, b):
+        pass
+    result = generate_dpi_signature(simple_func_import, pretty_print=False)
+    assert result == 'export "DPI-C" function simple_func_import;'
+
 
 class SomeClass:
     def __init__(self):
@@ -90,9 +96,19 @@ def test_generate_cxx_binding(check_file):
     result = generate_cxx_binding([SomeClass])
     check_file(result, "test_generate_cxx_binding.cc")
 
+
 def test_generate_cxx_code_class(check_file):
     result = generate_pybind_code([SomeClass])
     check_file(result, "test_generate_cxx_code_class.cc")
 
+
+def test_generate_pybind_function():
+    @import_
+    def simple_func_import(a, b):
+        pass
+    result = generate_pybind_function([simple_func_import], pretty_print=False)
+    assert result == 'm.def("simple_func_import"), &simple_func_import);'
+
+
 if __name__ == "__main__":
-    test_generate_c_header()
+    test_generate_pybind_function()

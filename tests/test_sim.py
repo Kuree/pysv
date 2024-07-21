@@ -1,5 +1,5 @@
 import pysv.util
-from pysv import sv, compile_lib, DataType, generate_cxx_binding, generate_sv_binding, Reference
+from pysv import sv, compile_lib, DataType, generate_cxx_binding, generate_sv_binding, Reference, import_
 from importlib.util import find_spec
 import pytest
 import os
@@ -212,7 +212,32 @@ def test_verilator_array(get_vector_filename, temp):
     assert out == "2\n42\n"
 
 
+@pytest.mark.skipif(not pysv.util.is_verilator_available(), reason="Verilator not available")
+@pytest.mark.xfail(reason="cross python import not working yet")
+def test_exrpot_dpi(get_vector_filename, temp):
+    @import_
+    def echo(a):
+        pass
+
+    @sv
+    def test():
+        a = echo(41)
+        print(a)
+
+    lib_path = compile_lib([test, echo], cwd=temp, lib_name="test_lib")
+    cxx_file = os.path.join(os.path.abspath(temp), "test_export_dpi.cc")
+    generate_cxx_binding([test, echo], filename=cxx_file)
+    sv_pkg = os.path.join(os.path.abspath(temp), "pysv_pkg.sv")
+    generate_sv_binding([test, echo], filename=sv_pkg, pkg_name="test_lib")
+    sv_file = get_vector_filename("test_export_dpi.sv")
+    tester = pysv.util.VerilatorTester(lib_path, sv_pkg, sv_file, cwd=temp, flags=["--main"])
+    out = tester.run().decode("ascii")
+    assert out == "2\n42\n"
+
+
 if __name__ == "__main__":
+    import sys
+    sys.path.append("/home/keyi/workspace/pysv")
     from conftest import get_vector_filename_fn
-    test_verilator_array(get_vector_filename_fn, "temp")
+    test_exrpot_dpi(get_vector_filename_fn, "temp")
 

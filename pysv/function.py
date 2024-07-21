@@ -79,7 +79,6 @@ class DPIFunction(Function):
 
         # check arg types
         for t in arg_types.values():
-            print(type(t), t)
             assert isinstance(t, (DataType, type))
         for name, t in arg_types.items():
             t = self.__check_arg_type(name, t)
@@ -165,6 +164,15 @@ class DPIFunction(Function):
 sv = DPIFunction
 
 
+class DPIImportFunction(DPIFunction):
+    def __init__(self, return_type: Union[DataType, type, Reference] = DataType.Int, **arg_types):
+        super().__init__(return_type, **arg_types)
+
+
+# aliasing
+import_ = DPIImportFunction
+
+
 class DPIFunctionCall:
     # all the functions will be run by default
     # Python-based hardware generator needs to turn this off
@@ -188,6 +196,8 @@ class DPIFunctionCall:
         return self
 
     def __call__(self, *args, **kwargs):
+        if isinstance(self.func_def, DPIImportFunction):
+            raise ValueError("Imported DPI function cannot be called directly from Python")
         if DPIFunctionCall.RUN_FUNCTION:
             # need to be extra careful about class methods
             if self.func_def.parent_class is not None:

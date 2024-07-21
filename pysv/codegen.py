@@ -1,5 +1,5 @@
 from typing import Union, List
-from .function import Function, DPIFunctionCall, sv
+from .function import Function, DPIFunctionCall, sv, DPIImportFunction
 from .types import DataType
 from .model import check_class_ctor, get_dpi_functions, inject_destructor, check_class_method
 from .util import (should_add_class, should_add_sys_path, make_dirs, make_unique_func_defs, should_import, is_conda,
@@ -52,6 +52,14 @@ def __should_include_buffer_impl(func_defs):
         for input_type in func_def.arg_types.values():
             if input_type == DataType.IntArray:
                 return True
+    return False
+
+
+def __should_generate_func_import(func_defs):
+    func_defs = __get_func_defs(func_defs)
+    for func_def in func_defs:
+        if isinstance(func_def, DPIImportFunction):
+            return True
     return False
 
 
@@ -144,6 +152,8 @@ def generate_dpi_signature(func_def: Union[Function, DPIFunctionCall],
 
     if is_class or is_function_class_wrapper:
         dpi_str = "function"
+    elif isinstance(func_def, DPIImportFunction):
+        dpi_str = 'export "DPI-C" function'
     else:
         dpi_str = 'import "DPI-C" function'
 
@@ -167,6 +177,11 @@ def generate_dpi_signature(func_def: Union[Function, DPIFunctionCall],
             func_name = func_def.base_name
         else:
             func_name = func_def.func_name
+
+    if isinstance(func_def, DPIImportFunction):
+        # dpi function does not need func type info
+        return dpi_str + " " + func_name + ";"
+
     func_name += "("
     result = " ".join([s for s in [dpi_str, return_type_str, func_name] if s])
     if pretty_print:
@@ -513,6 +528,10 @@ def generate_check_interpreter():
 def generate_cxx_function(func_def: Union[Function, DPIFunctionCall], pretty_print: bool = True,
                           add_sys_path: bool = True, add_class: bool = True):
     result = get_c_function_signature(func_def, pretty_print)
+    if isinstance(func_def, DPIImportFunction):
+        # just need to produce a function declaration
+        result += ";\n"
+        return result
     result += " {\n"
     if add_sys_path:
         result += generate_sys_path_check()
@@ -925,6 +944,20 @@ def generate_cxx_class(cls, pretty_print: bool = True, include_implementation: b
     return result
 
 
+def generate_pybind_function(func_defs: List[Union[type, DPIFunctionCall]], pretty_print: bool = True):
+    result = ""
+    code_blocks = []
+    for func_def in func_defs:
+        if isinstance(func_def, DPIImportFunction):
+            code_blocks.append('m.def("' + func_def.func_name + '"), &' + func_def.func_name + ");")
+    if code_blocks:
+        if pretty_print:
+            result = "    " + "\n    ".join(code_blocks) + "\n"
+        else:
+            result = "\n".join(code_blocks)
+    return result
+
+
 def generate_cxx_binding(func_defs: List[Union[type, DPIFunctionCall]], pretty_print: bool = True,
                          filename=None, include_implementation: bool = False, namespace: str = "pysv"):
     if filename is not None:
@@ -948,6 +981,10 @@ def generate_cxx_binding(func_defs: List[Union[type, DPIFunctionCall]], pretty_p
     if not include_implementation:
         result += generate_c_headers(func_defs, pretty_print)
 
+    add_func_import = __should_generate_func_import(func_defs)
+    if add_func_import:
+        result += "#include <pybind11/pybind11.h>\n"
+
     # need to output namespace
     result += "namespace {0} {{\n".format(namespace)
 
@@ -962,6 +999,10 @@ def generate_cxx_binding(func_defs: List[Union[type, DPIFunctionCall]], pretty_p
                                              ref_ctor=func_def in class_refs)
         result += generate_cxx_function_with_class(func_defs, include_implementation=include_implementation,
                                                    pretty_print=pretty_print)
+    if __should_generate_func_import(func_defs):
+        result += "PYBIND11_MODULE(" + namespace + ", m) {"
+        result += generate_pybind_function(func_defs, pretty_print=pretty_print)
+        result += "}\n"
 
     # end of namespace
     result += "}\n"
