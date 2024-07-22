@@ -437,7 +437,7 @@ def generate_local_variables(func_def: Union[Function, DPIFunctionCall]):
     return result
 
 
-def generate_global_variables(func_def: Union[Function, DPIFunctionCall], add_class=False):
+def generate_global_variables(func_def: Union[Function, DPIFunctionCall], add_class=False, lib_name: str = ""):
     func_def = __get_func_def(func_def)
     raw_imports = func_def.imports
     imports = {}
@@ -450,6 +450,12 @@ def generate_global_variables(func_def: Union[Function, DPIFunctionCall], add_cl
         result += __INDENTATION + __LOAD_CLASS_DEFS + "(globals);\n"
     if len(imports) > 0:
         for n, m in imports.items():
+            if isinstance(m, DPIImportFunction):
+                if not lib_name:
+                    raise ValueError("Import functions from SV must have valid lib_name set")
+                func_name = m.func_name
+                m = lib_name + "." + func_name
+                n = func_name
             result += __INDENTATION + '{0}("{1}", "{2}", globals);\n'.format(__IMPORT_MODULE, m, n)
         result += "\n"
     return result
@@ -526,7 +532,7 @@ def generate_check_interpreter():
 
 
 def generate_cxx_function(func_def: Union[Function, DPIFunctionCall], pretty_print: bool = True,
-                          add_sys_path: bool = True, add_class: bool = True):
+                          add_sys_path: bool = True, add_class: bool = True, lib_name: str = ""):
     result = get_c_function_signature(func_def, pretty_print)
     if isinstance(func_def, DPIImportFunction):
         # just need to produce a function declaration
@@ -537,7 +543,7 @@ def generate_cxx_function(func_def: Union[Function, DPIFunctionCall], pretty_pri
         result += generate_sys_path_check()
     else:
         result += generate_check_interpreter()
-    result += generate_global_variables(func_def, add_class=add_class)
+    result += generate_global_variables(func_def, add_class=add_class, lib_name=lib_name)
     result += generate_local_variables(func_def)
     result += generate_execute_code(func_def, pretty_print)
     result += generate_return_value(func_def)
@@ -546,7 +552,7 @@ def generate_cxx_function(func_def: Union[Function, DPIFunctionCall], pretty_pri
     return result
 
 
-def generate_sys_path_values(pretty_print=True):
+def generate_sys_path_values(build_dir="", pretty_print=True):
     result = "auto " + __SYS_PATH_NAME + " = {"
     if pretty_print:
         padding = ",\n" + len(result) * " "
@@ -555,20 +561,22 @@ def generate_sys_path_values(pretty_print=True):
     path_values = []
     for p in sys.path:
         path_values.append('"{0}"'.format(p))
+    if build_dir:
+        path_values.append('"{0}"'.format(build_dir))
     result += padding.join(path_values)
     result += "};\n\n"
     return result
 
 
 def generate_bootstrap_code(pretty_print=True, add_sys_path=True, add_class=True, add_imports=True,
-                            add_local_object=True, add_buffer_impl=False):
+                            add_local_object=True, add_buffer_impl=False, build_dir=""):
     result = __get_code_snippet("include_header.hh")
     result += __get_code_snippet("runtime_values.cc")
 
     if add_sys_path:
         result += __get_conda_path()
         result += __get_code_snippet("initialize_guard.cc")
-        result += generate_sys_path_values(pretty_print)
+        result += generate_sys_path_values(build_dir, pretty_print)
         result += __get_code_snippet("sys_path.cc")
     else:
         result += __get_code_snippet("check_interpreter.cc")
@@ -610,21 +618,24 @@ def generate_forward_sv_class_definition(class_refs):
 
 
 def generate_pybind_code(func_defs: List[Union[type, DPIFunctionCall]], pretty_print: bool = True,
-                         namespace: str = "pysv", add_sys_path: bool = False):
+                         namespace: str = "pysv", add_sys_path: bool = False, build_dir: str = ""):
     # initialize the check the classes
     __initialize_class_defs(func_defs)
     # remove unnecessary entries
     func_defs = make_unique_func_defs(func_defs)
 
     add_class = should_add_class(func_defs)
+    add_pymodule = __should_generate_func_import(func_defs)
     if not add_sys_path:
         add_sys_path = should_add_sys_path(func_defs)
     add_imports = __has_imports(func_defs)
     add_local_object = __should_include_local_object(func_defs)
     add_buffer_impl = __should_include_buffer_impl(func_defs)
+    if add_pymodule:
+        assert build_dir, "build_dir not set for import mode"
     result = generate_bootstrap_code(pretty_print, add_sys_path=add_sys_path, add_class=add_class,
                                      add_imports=add_imports, add_local_object=add_local_object,
-                                     add_buffer_impl=add_buffer_impl) + "\n"
+                                     add_buffer_impl=add_buffer_impl, build_dir=build_dir) + "\n"
     # generate extern C block
     result += 'extern "C" {\n'
     code_blocks = []
@@ -632,13 +643,13 @@ def generate_pybind_code(func_defs: List[Union[type, DPIFunctionCall]], pretty_p
     new_defs = __get_func_defs(func_defs)
     for func_def in new_defs:
         code_blocks.append(generate_cxx_function(func_def, pretty_print=pretty_print, add_sys_path=add_sys_path,
-                                                 add_class=add_class))
+                                                 add_class=add_class, lib_name=namespace))
     result += "\n".join(code_blocks)
     result += generate_runtime_finalize(pretty_print=pretty_print)
     result += "}\n"
 
     # notice that if there is classes involved, we also need to generate the class implementation
-    if add_class:
+    if add_class or add_pymodule:
         result += generate_cxx_binding(func_defs, pretty_print=pretty_print, include_implementation=True,
                                        namespace=namespace)
 
@@ -949,7 +960,7 @@ def generate_pybind_function(func_defs: List[Union[type, DPIFunctionCall]], pret
     code_blocks = []
     for func_def in func_defs:
         if isinstance(func_def, DPIImportFunction):
-            code_blocks.append('m.def("' + func_def.func_name + '"), &' + func_def.func_name + ");")
+            code_blocks.append('m.def("' + func_def.func_name + '", &' + func_def.func_name + ");")
     if code_blocks:
         if pretty_print:
             result = "    " + "\n    ".join(code_blocks) + "\n"
@@ -986,7 +997,10 @@ def generate_cxx_binding(func_defs: List[Union[type, DPIFunctionCall]], pretty_p
         result += "#include <pybind11/pybind11.h>\n"
 
     # need to output namespace
-    result += "namespace {0} {{\n".format(namespace)
+    cxx_namespace = namespace
+    if cxx_namespace.startswith("lib"):
+        cxx_namespace = cxx_namespace[len("lib"):]
+    result += "namespace {0} {{\n".format(cxx_namespace)
 
     # generate c++ classes
     add_class = should_add_class(func_defs)
@@ -999,13 +1013,13 @@ def generate_cxx_binding(func_defs: List[Union[type, DPIFunctionCall]], pretty_p
                                              ref_ctor=func_def in class_refs)
         result += generate_cxx_function_with_class(func_defs, include_implementation=include_implementation,
                                                    pretty_print=pretty_print)
-    if __should_generate_func_import(func_defs):
-        result += "PYBIND11_MODULE(" + namespace + ", m) {"
-        result += generate_pybind_function(func_defs, pretty_print=pretty_print)
-        result += "}\n"
-
     # end of namespace
     result += "}\n"
+
+    if __should_generate_func_import(func_defs):
+        result += "PYBIND11_MODULE(" + namespace + ", m) {\n"
+        result += generate_pybind_function(func_defs, pretty_print=pretty_print)
+        result += "}\n"
 
     # end of include guard
     result += "#endif // {0}\n".format(header_name)

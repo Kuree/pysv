@@ -1,7 +1,6 @@
 import inspect
 import types
-import sys
-from typing import Dict
+from typing import Dict, Union
 
 __EXCLUDE_MODULE_NAME = {"__builtins__", "@py_builtins", "@pytest_ar", "pytest", "pysv", "importlib"}
 __ADDITIONAL_EXCLUDE_NAME = set()
@@ -37,6 +36,7 @@ def _inspect_frame(num_frame=2) -> Dict[str, str]:
 
 
 def _get_import_name(val, check_type=True):
+    from .function import DPIImportFunction
     if isinstance(val, types.ModuleType):
         return val.__name__
     else:
@@ -45,8 +45,11 @@ def _get_import_name(val, check_type=True):
             return None
         module_name = val.__module__.split(".")[0]
         full_name = None
+        if isinstance(val, DPIImportFunction):
+            return val
         if check_type and __should_exclude(module_name):
             # don't care about excluded names
+            # note that we allow local DPI imported function
             return None
         if isinstance(val, type):
             full_name = "{0}.{1}".format(val.__module__, val.__qualname__)

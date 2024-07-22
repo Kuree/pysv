@@ -107,7 +107,7 @@ def test_generate_pybind_function():
     def simple_func_import(a, b):
         pass
     result = generate_pybind_function([simple_func_import], pretty_print=False)
-    assert result == 'm.def("simple_func_import"), &simple_func_import);'
+    assert result == 'm.def("simple_func_import", &simple_func_import);'
 
 
 if __name__ == "__main__":

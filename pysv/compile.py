@@ -37,7 +37,8 @@ def compile_lib(func_defs, cwd, lib_name="pysv", pretty_print=True, release_buil
         shutil.copyfile(cmake_file, dst_cmake)
 
     # codegen the target
-    src = generate_pybind_code(func_defs, pretty_print, add_sys_path=add_sys_path)
+    src = generate_pybind_code(func_defs, pretty_print, add_sys_path=add_sys_path, namespace=lib_name,
+                               build_dir=os.path.realpath(cwd))
     output_filename = os.path.join(cwd, "{0}.cc".format(lib_name))
     skip_write_out = False
     if os.path.exists(output_filename):
@@ -88,7 +89,7 @@ def compile_lib(func_defs, cwd, lib_name="pysv", pretty_print=True, release_buil
     return lib_file
 
 
-def __get_cxx_compiler():   # pragma: no cover
+def __get_cxx_compiler():  # pragma: no cover
     # TODO: this will not work for windows, since in most of the time
     #   it requires msvc and a project file. consider change the compilation
     #   flow into CMake
