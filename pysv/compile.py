@@ -16,7 +16,7 @@ def compile_lib(func_defs, cwd, lib_name="pysv", pretty_print=True, release_buil
     """
     if not os.path.isdir(cwd):
         os.makedirs(cwd, exist_ok=True)
-    # notice that fo follow the "lib" + name convention so the linker can find the library easily
+    # follow the "lib" + name convention so the linker can find the library easily
     if len(lib_name) < 3 or lib_name[:3] != "lib":
         lib_name = "lib" + lib_name
 
@@ -64,7 +64,7 @@ def compile_lib(func_defs, cwd, lib_name="pysv", pretty_print=True, release_buil
     # add header definition
     cmake_args.append("-DDPI_HEADER_DIR=" + vlstd_path)
     # tell cmake where to find python (in case it's not in the system path)
-    cmake_args.append("-DPYTHON_EXECUTABLE=" + sys.executable)
+    cmake_args.append("-DPython_EXECUTABLE:FILEPATH=" + sys.executable)
     subprocess.check_call(["cmake"] + cmake_args + [".."],
                           cwd=build_dir)
     # built it!
