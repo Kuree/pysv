@@ -12,7 +12,7 @@ jobs:
         os: [ ubuntu-latest ]
         # disable macos for now until I figure out how to build verilator
         # os: [ ubuntu-latest, macos-latest ]
-        python-version: [ 3.7, 3.8, 3.9 ]
+        python-version: [ '3.9', '3.10', '3.11' ]
 
     steps:
     - uses: actions/checkout@v2
@@ -23,7 +23,7 @@ jobs:
         git submodule sync --recursive
         git -c "http.extraheader=$auth_header" -c protocol.version=2 submodule update --init --force --recursive --depth=1
     - name: Setup Python environment 🐍
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
     - name: Display Python version 🐍
@@ -48,9 +48,9 @@ jobs:
         pip3 install wheel
         python3 setup.py bdist_wheel
     - name: Upload artifact 🛖
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
-        name: Python Wheel
+        name: Python Wheel ${{ matrix.python-version }}
         path: dist/
     - name: Publish distribution 📦 to PyPI
       if: startsWith(github.ref, 'refs/tags') && matrix.os == 'ubuntu-latest' && matrix.python-version == '3.8'
