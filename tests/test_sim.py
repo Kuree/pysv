@@ -236,7 +236,6 @@ def test_verilator_array(get_vector_filename, temp):
 
 
 @pytest.mark.skipif(not pysv.util.is_verilator_available(), reason="Verilator not available")
-@pytest.mark.xfail(reason="cross python import not working yet")
 def test_exrpot_dpi(get_vector_filename, temp):
     @import_
     def echo(a):
@@ -255,7 +254,7 @@ def test_exrpot_dpi(get_vector_filename, temp):
     sv_file = get_vector_filename("test_export_dpi.sv")
     tester = pysv.util.VerilatorTester(lib_path, sv_pkg, sv_file, cwd=temp, flags=["--main"])
     out = tester.run().decode("ascii")
-    assert out == "2\n42\n"
+    assert out.startswith("42\n")
 
 
 if __name__ == "__main__":

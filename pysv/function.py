@@ -109,7 +109,7 @@ class DPIFunction(Function):
             self.__func_name = fn.__name__
 
         # detect return
-        if self.return_type == DataType.Int and not has_return(fn):
+        if not isinstance(self, DPIImportFunction) and self.return_type == DataType.Int and not has_return(fn):
             self.return_type = DataType.Void
 
         return DPIFunctionCall(self)
@@ -166,7 +166,14 @@ sv = DPIFunction
 
 class DPIImportFunction(DPIFunction):
     def __init__(self, return_type: Union[DataType, type, Reference] = DataType.Int, **arg_types):
-        super().__init__(return_type, **arg_types)
+        if not isinstance(return_type, DataType) and not isinstance(return_type, type) and not isinstance(return_type,
+                                                                                                          Reference):
+            assert hasattr(return_type, "__name__"), "Function does not have __name__"
+            fn = return_type
+            super().__init__(DataType.Int, **arg_types)
+            self.__call__(fn)
+        else:
+            super().__init__(return_type, **arg_types)
 
 
 # aliasing

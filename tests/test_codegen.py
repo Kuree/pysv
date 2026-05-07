@@ -84,6 +84,19 @@ def test_generate_array_dpi_header():
     assert result == 'import "DPI-C" function void array_1d(input int a[]);'
 
 
+def test_generate_context_dpi_header():
+    @import_
+    def echo(a):
+        pass
+
+    @sv(return_type=DataType.Int)
+    def call_echo():
+        return echo(41)
+
+    result = generate_dpi_signature(call_echo, pretty_print=False)
+    assert result == 'import "DPI-C" context function int call_echo();'
+
+
 class SomeClass:
     def __init__(self):
         self.value = "hello world\n"

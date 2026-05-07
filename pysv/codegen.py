@@ -19,6 +19,8 @@ __GET_LOCAL_OBJECT = "get_local_object"
 __PYSV_OBJECT_BASE = "PySVObject"
 __PYSV_DESTROY = "destroy"
 __LOAD_CLASS_DEFS = "load_class_defs"
+__PYSV_INIT_EXPORT_SCOPE = "pysv_init_export_scope"
+__PYSV_EXPORT_SCOPE = "pysv_export_scope"
 __DEFAULT_ATTRIBUTE = '__attribute__((visibility("default"))) '
 
 
@@ -78,6 +80,15 @@ def __get_conda_path():
 
 def __is_array(t: DataType):
     return t == DataType.IntArray
+
+
+def __requires_dpi_context(func_def):
+    # DPIImportFunction generates an SV export, not an imported C function.
+    if isinstance(func_def, DPIImportFunction):
+        return False
+    py_src = func_def.get_func_src(False)
+    return any(isinstance(m, DPIImportFunction) and should_import(n, py_src)
+               for n, m in func_def.imports.items())
 
 
 def __get_dpi_data_type(t: DataType):
@@ -154,6 +165,8 @@ def generate_dpi_signature(func_def: Union[Function, DPIFunctionCall],
         dpi_str = "function"
     elif isinstance(func_def, DPIImportFunction):
         dpi_str = 'export "DPI-C" function'
+    elif __requires_dpi_context(func_def):
+        dpi_str = 'import "DPI-C" context function'
     else:
         dpi_str = 'import "DPI-C" function'
 
@@ -196,12 +209,17 @@ def generate_dpi_signature(func_def: Union[Function, DPIFunctionCall],
 
 
 def generate_dpi_definitions(func_defs, pretty_print=True):
+    add_func_import = __should_generate_func_import(func_defs)
     if pysv_finalize not in func_defs:
         func_defs = func_defs + [pysv_finalize]
     new_defs = __get_func_defs(func_defs)
     result = ""
     for func in new_defs:
+        if isinstance(func, DPIImportFunction):
+            continue
         result += "{0}\n".format(generate_dpi_signature(func, pretty_print))
+    if add_func_import:
+        result += 'import "DPI-C" context function void {0}();\n'.format(__PYSV_INIT_EXPORT_SCOPE)
     return result
 
 
@@ -463,6 +481,11 @@ def generate_global_variables(func_def: Union[Function, DPIFunctionCall], add_cl
 
 def generate_execute_code(func_def: Union[Function, DPIFunctionCall], pretty_print=True):
     func_def = __get_func_def(func_def)
+    result = ""
+    requires_context = __requires_dpi_context(func_def)
+    if requires_context:
+        result += __INDENTATION + "auto pysv_previous_scope = svGetScope();\n"
+        result += __INDENTATION + "if ({0}) svSetScope({0});\n".format(__PYSV_EXPORT_SCOPE)
     # depends on whether it's class method or not
     if func_def.parent_class is not None and not func_def.is_init:
         # grab values from the locals
@@ -470,18 +493,20 @@ def generate_execute_code(func_def: Union[Function, DPIFunctionCall], pretty_pri
         for arg_name in func_def.arg_names[1:]:
             arg = 'locals["{0}"]'.format(get_arg_name(arg_name))
             arg_names.append(arg)
-        result = __INDENTATION + 'locals["__result"] = call_class_func('
+        call = __INDENTATION + 'locals["__result"] = call_class_func('
         if pretty_print:
-            padding = ",\n" + len(result) * " "
+            padding = ",\n" + len(call) * " "
         else:
             padding = ", "
         args = padding.join(arg_names)
-        result += args + ");\n"
+        result += call + args + ");\n"
     else:
-        result = __INDENTATION + 'py::exec(R"(\n'
+        result += __INDENTATION + 'py::exec(R"(\n'
         python_src = get_python_src(func_def)
         result += python_src
         result += ')", globals, locals);\n'
+    if requires_context:
+        result += __INDENTATION + "if (pysv_previous_scope) svSetScope(pysv_previous_scope);\n"
     return result
 
 
@@ -602,8 +627,10 @@ def pysv_finalize():
 pysv_finalize = sv()(pysv_finalize)
 
 
-def generate_runtime_finalize(pretty_print):
+def generate_runtime_finalize(pretty_print, reset_export_scope=False):
     result = get_c_function_signature(pysv_finalize, pretty_print) + " {\n"
+    if reset_export_scope:
+        result += __INDENTATION + "{0} = nullptr;\n".format(__PYSV_EXPORT_SCOPE)
     result += __get_code_snippet("finalize_runtime.cc")
     result += "}\n"
     return result
@@ -636,6 +663,10 @@ def generate_pybind_code(func_defs: List[Union[type, DPIFunctionCall]], pretty_p
     result = generate_bootstrap_code(pretty_print, add_sys_path=add_sys_path, add_class=add_class,
                                      add_imports=add_imports, add_local_object=add_local_object,
                                      add_buffer_impl=add_buffer_impl, build_dir=build_dir) + "\n"
+    if add_pymodule:
+        result += '#include "svdpi.h"\n'
+        result += 'svScope {0} = nullptr;\n'.format(__PYSV_EXPORT_SCOPE)
+        result += "\n"
     # generate extern C block
     result += 'extern "C" {\n'
     code_blocks = []
@@ -645,7 +676,11 @@ def generate_pybind_code(func_defs: List[Union[type, DPIFunctionCall]], pretty_p
         code_blocks.append(generate_cxx_function(func_def, pretty_print=pretty_print, add_sys_path=add_sys_path,
                                                  add_class=add_class, lib_name=namespace))
     result += "\n".join(code_blocks)
-    result += generate_runtime_finalize(pretty_print=pretty_print)
+    if add_pymodule:
+        result += '{0}void {1}() {{\n'.format(__DEFAULT_ATTRIBUTE, __PYSV_INIT_EXPORT_SCOPE)
+        result += __INDENTATION + '{0} = svGetScope();\n'.format(__PYSV_EXPORT_SCOPE)
+        result += "}\n"
+    result += generate_runtime_finalize(pretty_print=pretty_print, reset_export_scope=add_pymodule)
     result += "}\n"
 
     # notice that if there is classes involved, we also need to generate the class implementation
@@ -960,7 +995,7 @@ def generate_pybind_function(func_defs: List[Union[type, DPIFunctionCall]], pret
     code_blocks = []
     for func_def in func_defs:
         if isinstance(func_def, DPIImportFunction):
-            code_blocks.append('m.def("' + func_def.func_name + '", &' + func_def.func_name + ");")
+            code_blocks.append('m.def("{0}", &{0});'.format(func_def.func_name))
     if code_blocks:
         if pretty_print:
             result = "    " + "\n    ".join(code_blocks) + "\n"
