@@ -1,6 +1,15 @@
 import enum
 
 
+class ArrayType:
+    def __init__(self, base_type, dim: int):
+        self.base_type = base_type
+        self.dim = dim
+
+    def __eq__(self, other):
+        return self.base_type == other
+
+
 class DataType(enum.Enum):
     Bit = enum.auto()
     Byte = enum.auto()
@@ -31,9 +40,8 @@ class DataType(enum.Enum):
     def __getitem__(self, dim: int):
         assert self == DataType.IntArray, "Only Int array allowed to have dimensions"
         assert isinstance(dim, int), "Array dim must be an integer"
-        res = DataType.IntArray
-        res.dim = dim
-        return res
+        assert dim > 0, "Array dim must be positive"
+        return ArrayType(DataType.IntArray, dim)
 
 
 class Reference:

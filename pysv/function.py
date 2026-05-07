@@ -1,7 +1,7 @@
 import inspect
 import abc
 from typing import Dict, List, Union, Callable
-from .types import DataType, Reference
+from .types import ArrayType, DataType, Reference
 from .frame import _inspect_frame, _get_import_name
 from .pyast import get_function_src, get_class_src, has_return
 
@@ -79,13 +79,13 @@ class DPIFunction(Function):
 
         # check arg types
         for t in arg_types.values():
-            assert isinstance(t, (DataType, type))
+            assert isinstance(t, (ArrayType, DataType, type))
         for name, t in arg_types.items():
             t = self.__check_arg_type(name, t)
             assert name not in self.arg_types, "Invalid arg name " + name
             self.arg_types[name] = t
         for t in self.arg_types.values():
-            assert isinstance(t, DataType)
+            assert isinstance(t, (ArrayType, DataType))
             assert t != DataType.Void, str(DataType.Void) + " can only used as return type"
 
     def __call__(self, fn):

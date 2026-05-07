@@ -71,10 +71,17 @@ def test_generate_array_dpi_header():
     def array_2d(a):
         pass
 
+    @sv(a=DataType.IntArray)
+    def array_1d(a):
+        pass
+
     result = generate_dpi_signature(array_2d, pretty_print=False)
     assert result == 'import "DPI-C" function void array_2d(input int a[][]);'
     result = generate_c_header(array_2d, pretty_print=False)
     assert result == "void array_2d(svOpenArrayHandle a);"
+
+    result = generate_dpi_signature(array_1d, pretty_print=False)
+    assert result == 'import "DPI-C" function void array_1d(input int a[]);'
 
 
 class SomeClass:
