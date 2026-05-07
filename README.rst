@@ -168,10 +168,11 @@ normal Python function:
       end
     endmodule
 
-> [!NOTE]
-> Call ``pysv_init_export_scope()`` from the same SystemVerilog scope that
-> exports the function before invoking Python code that calls back into
-> SystemVerilog.
+.. note::
+
+   Call ``pysv_init_export_scope()`` from the same SystemVerilog scope that
+   exports the function before invoking Python code that calls back into
+   SystemVerilog.
 
 
 .. _pybind11: https://github.com/pybind/pybind11
