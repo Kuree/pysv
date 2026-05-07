@@ -128,6 +128,51 @@ of Python ``memoryview``, only numpy style indexing is supported, e.g.
 If you don't need to modify the underlying array, you can use ``numpy`` to
 convert the data to a numpy array for further processing.
 
+.. code:: python
+
+    @sv(a=DataType.IntArray[2])
+    def set_2d_value(a):
+        print(a[2, 1])
+        a[2, 1] = 42
+
+To call a SystemVerilog function from Python, use ``import_`` to declare the
+function that SystemVerilog exports. The Python function can then call it as a
+normal Python function:
+
+.. code:: python
+
+    from pysv import import_, sv
+
+    @import_
+    def echo(a):
+        pass
+
+    @sv
+    def test():
+        print(echo(41))
+
+
+.. code:: systemverilog
+
+    module main;
+      function int echo(int a);
+        return a + 1;
+      endfunction
+
+      export "DPI-C" function echo;
+
+      initial begin
+        test_lib::pysv_init_export_scope();
+        test_lib::test();
+        test_lib::pysv_finalize();
+      end
+    endmodule
+
+> [!NOTE]
+> Call ``pysv_init_export_scope()`` from the same SystemVerilog scope that
+> exports the function before invoking Python code that calls back into
+> SystemVerilog.
+
 
 .. _pybind11: https://github.com/pybind/pybind11
 .. |Latest Documentation Status| image:: https://readthedocs.org/projects/pysv/badge/?version=latest
