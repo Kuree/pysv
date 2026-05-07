@@ -190,11 +190,34 @@ def test_verilator_return_reference(get_vector_filename, temp):
 
 
 @pytest.mark.skipif(not pysv.util.is_verilator_available(), reason="Verilator not available")
+def test_verilator_array_1d(get_vector_filename, temp):
+    @sv(a=DataType.IntArray)
+    def set_value(a):
+        print(a[3])
+        a[3] = 42
+
+    lib_path = compile_lib([set_value], cwd=temp)
+    header_file = os.path.join(os.path.abspath(temp), "test_verilator_array_1d.hh")
+    generate_cxx_binding([set_value], filename=header_file)
+    sv_pkg = os.path.join(os.path.abspath(temp), "pysv_pkg.sv")
+    generate_sv_binding([set_value], filename=sv_pkg)
+
+    sv_file = get_vector_filename("test_verilator_array_1d.sv")
+    driver = get_vector_filename("test_verilator_array_1d.cc")
+    tester = pysv.util.VerilatorTester(lib_path, sv_file, header_file, driver, cwd=temp)
+    out = tester.run().decode("ascii")
+    assert out == "2\n42\n"
+
+
+@pytest.mark.skipif(not pysv.util.is_verilator_available(), reason="Verilator not available")
 def test_verilator_array(get_vector_filename, temp):
     @sv(a=DataType.IntArray[2])
     def set_value(a):
         print(a[2, 1])
         a[2, 1] = 42
+        a[0, 4] = 11
+        a[1, 3] = 17
+        a[2, 0] = 23
 
     lib_path = compile_lib([set_value], cwd=temp)
     header_file = os.path.join(os.path.abspath(temp), "test_verilator_array.hh")
@@ -209,7 +232,7 @@ def test_verilator_array(get_vector_filename, temp):
     # just run the verilator
     tester = pysv.util.VerilatorTester(lib_path, sv_file, header_file, driver, cwd=temp)
     out = tester.run().decode("ascii")
-    assert out == "2\n42\n"
+    assert out == "2\n11\n17\n23\n42\n"
 
 
 @pytest.mark.skipif(not pysv.util.is_verilator_available(), reason="Verilator not available")
@@ -240,4 +263,3 @@ if __name__ == "__main__":
     sys.path.append("/home/keyi/workspace/pysv")
     from conftest import get_vector_filename_fn
     test_exrpot_dpi(get_vector_filename_fn, "temp")
-

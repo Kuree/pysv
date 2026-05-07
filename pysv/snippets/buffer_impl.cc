@@ -1,4 +1,7 @@
 #include "svdpi.h"
+#include <cstdint>
+#include <stdexcept>
+#include <vector>
 
 py::memoryview to_buffer(const svOpenArrayHandle array_handle) {
     ssize_t element_size = sizeof(int32_t);
@@ -16,12 +19,11 @@ py::memoryview to_buffer(const svOpenArrayHandle array_handle) {
         auto s = svSize(array_handle, i);
         sizes.emplace_back(s);
     }
-    // assumes row major ordering
-    ssize_t stride = element_size;
+    // SV open arrays expose contiguous storage here; publish it as a C-contiguous
+    // Python buffer so memoryview/NumPy tuple indexing maps to the same element.
     strides = std::vector<ssize_t>(dim, element_size);
-    for (int i = 0; i < dim - 1; i++) {
-        stride *= sizes[i];
-        strides[i] = stride;
+    for (int i = dim - 2; i >= 0; i--) {
+        strides[i] = strides[i + 1] * sizes[i + 1];
     }
 
     return py::memoryview::from_buffer(

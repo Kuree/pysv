@@ -66,6 +66,17 @@ def test_generate_dpi_header(check_file):
     assert result == 'export "DPI-C" function simple_func_import;'
 
 
+def test_generate_array_dpi_header():
+    @sv(a=DataType.IntArray[2])
+    def array_2d(a):
+        pass
+
+    result = generate_dpi_signature(array_2d, pretty_print=False)
+    assert result == 'import "DPI-C" function void array_2d(input int a[][]);'
+    result = generate_c_header(array_2d, pretty_print=False)
+    assert result == "void array_2d(svOpenArrayHandle a);"
+
+
 class SomeClass:
     def __init__(self):
         self.value = "hello world\n"
