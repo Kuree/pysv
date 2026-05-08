@@ -1,0 +1,50 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pysv"
+version = "0.4.0"
+authors = [
+    { name = "Keyi Zhang", email = "keyi@cs.stanford.edu" },
+]
+readme = { file = "README.rst", content-type = "text/x-rst" }
+requires-python = ">=3.6"
+dependencies = [
+    "astor",
+]
+
+[project.optional-dependencies]
+test = [
+    "numpy",
+    "pytest",
+]
+test-full = [
+    "tensorflow-cpu",
+    "pytest",
+]
+
+[project.urls]
+Homepage = "https://github.com/Kuree/pysv"
+
+[tool.setuptools]
+include-package-data = false
+packages = ["pysv"]
+
+[tool.setuptools.package-data]
+pysv = [
+    "**/*.c",
+    "**/*.cc",
+    "**/*.cmake",
+    "**/*.cpp",
+    "**/*.h",
+    "**/*.hh",
+    "**/*.in",
+    "**/*.sv",
+    "**/*.txt",
+]
+
+[tool.setuptools.exclude-package-data]
+pysv = [
+    "extern/pybind11/tests/**",
+]

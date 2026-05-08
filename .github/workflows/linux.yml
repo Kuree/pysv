@@ -1,6 +1,10 @@
 name: CI Test
 
-on: [push, pull_request]
+on:
+  push:
+    branches:
+    - "**"
+  pull_request:
 
 jobs:
   build:
@@ -12,10 +16,10 @@ jobs:
         os: [ ubuntu-latest ]
         # disable macos for now until I figure out how to build verilator
         # os: [ ubuntu-latest, macos-latest ]
-        python-version: [ '3.9', '3.10', '3.11' ]
+        python-version: [ '3.10', '3.11', '3.12', '3.13', '3.14' ]
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - name: Checkout submodules 🖥️
       shell: bash
       run: |
@@ -45,16 +49,10 @@ jobs:
     - name: Build Python wheel 🎡
       shell: bash
       run: |
-        pip3 install wheel
-        python3 setup.py bdist_wheel
+        python -m pip install build
+        python -m build --wheel
     - name: Upload artifact 🛖
       uses: actions/upload-artifact@v4
       with:
         name: Python Wheel ${{ matrix.python-version }}
         path: dist/
-    - name: Publish distribution 📦 to PyPI
-      if: startsWith(github.ref, 'refs/tags') && matrix.os == 'ubuntu-latest' && matrix.python-version == '3.8'
-      uses: pypa/gh-action-pypi-publish@release/v1
-      with:
-        password: ${{ secrets.PYPI_API_TOKEN }}
-        skip_existing: true
