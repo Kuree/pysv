@@ -52,21 +52,23 @@ void initialize_guard() {
     if (guard) return;
     // make sure if PYTHONHOME and PYTHONPATH are set or not
     auto python_env_vars = get_py_env();
-    // if it is set, clear it out temporally and then restore it later
-    // when we check the system path
-    if (python_env_vars.first.empty()) {
-        // we all good
-        // can't use make_unique since it's c++14 only
+    bool has_python_env_vars = !python_env_vars.first.empty() || !python_env_vars.second.empty();
+
+    if (has_python_env_vars || !conda_python_home.empty()) {
+        // Simulator launchers such as Vivado may set PYTHONHOME/PYTHONPATH to
+        // their bundled Python. Temporarily replace those with the build-time
+        // interpreter paths before pybind11 initializes CPython.
+        unset_py_env();
         if (!conda_python_home.empty()) {
             set_py_env(std::make_pair(conda_python_home, conda_python_path));
         }
         guard = std::unique_ptr<py::scoped_interpreter>(new py::scoped_interpreter());
-    } else {
-        // unset the env
         unset_py_env();
+        if (has_python_env_vars) {
+            set_py_env(python_env_vars);
+            has_py_env_set = true;
+        }
+    } else {
         guard = std::unique_ptr<py::scoped_interpreter>(new py::scoped_interpreter());
-        // then restore it
-        set_py_env(python_env_vars);
-        has_py_env_set = true;
     }
 }

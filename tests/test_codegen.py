@@ -53,6 +53,23 @@ def test_generate_cxx_code(check_file):
     check_file(result, "test_generate_cxx_code.cc")
 
 
+def test_generate_bootstrap_restores_simulator_python_env(monkeypatch):
+    import pysv.codegen as codegen
+
+    monkeypatch.setattr(codegen, "is_conda", lambda: True)
+    monkeypatch.setattr(codegen.sys, "prefix", "/opt/conda/envs/pysv")
+    monkeypatch.setattr(codegen.sys, "base_prefix", "/opt/conda")
+    monkeypatch.setattr(codegen.sys, "path", ["/project", "/opt/conda/envs/pysv/lib/python3.10"])
+
+    result = codegen.generate_bootstrap_code(add_sys_path=True, add_class=False, add_imports=False,
+                                             add_local_object=False)
+
+    assert 'std::string conda_python_home = "/opt/conda/envs/pysv";' in result
+    assert 'bool has_python_env_vars = !python_env_vars.first.empty() || !python_env_vars.second.empty();' in result
+    assert "set_py_env(std::make_pair(conda_python_home, conda_python_path));" in result
+    assert "if (has_python_env_vars) {" in result
+
+
 def test_generate_dpi_header(check_file):
     result = generate_dpi_signature(simple_func)
     check_file(result, "test_generate_dpi_header.sv")

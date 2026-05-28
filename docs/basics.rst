@@ -167,6 +167,10 @@ There are more optional arguments provided with default values:
   of rules to detect whether user has imported a foreign module, and automatically
   set set system path if detected. However, should the rules fail, user can manually
   set this flag to ``True`` to force add system path.
+  This is also useful for simulators that launch with their own Python
+  environment, such as Vivado, because pysv will initialize the embedded
+  interpreter with the Python environment used to build the DPI library instead
+  of the simulator's ``PYTHONHOME`` / ``PYTHONPATH``.
 
 Generate binding code
 ---------------------
