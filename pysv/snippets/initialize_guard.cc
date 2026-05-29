@@ -1,15 +1,13 @@
 std::string get_env(const char *name) {
     std::string result;
 #ifdef _WIN32
-    char *path_var;
-    size_t len;
+    char *path_var = nullptr;
+    size_t len = 0;
     auto err = _dupenv_s(&path_var, &len, name);
-    if (err) {
-        env_path = "";
+    if (!err && path_var) {
+        result = std::string(path_var);
+        free(path_var);
     }
-    result = std::string(path_var);
-    free(path_var);
-    path_var = nullptr;
 #else
     auto r = std::getenv(name);
     if (r) {
@@ -20,7 +18,11 @@ std::string get_env(const char *name) {
 }
 
 void unset_env(const char *name) {
+#ifdef _WIN32
+    _putenv_s(name, "");
+#else
     unsetenv(name);
+#endif
 }
 
 std::pair<std::string, std::string> get_py_env() {
@@ -35,6 +37,10 @@ void unset_py_env() {
 }
 
 void set_env(const char *name, const std::string &value) {
+    if (value.empty()) {
+        unset_env(name);
+        return;
+    }
 #ifdef _WIN32
     _putenv_s(name, value.c_str());
 #else
@@ -42,7 +48,7 @@ void set_env(const char *name, const std::string &value) {
 #endif
 }
 
-void set_py_env(const std::pair<std::string, std::string> values) {
+void set_py_env(const std::pair<std::string, std::string> &values) {
     set_env("PYTHONHOME", values.first);
     set_env("PYTHONPATH", values.second);
 }
