@@ -1,15 +1,13 @@
 std::string get_env(const char *name) {
     std::string result;
 #ifdef _WIN32
-    char *path_var;
-    size_t len;
+    char *path_var = nullptr;
+    size_t len = 0;
     auto err = _dupenv_s(&path_var, &len, name);
-    if (err) {
-        env_path = "";
+    if (!err && path_var) {
+        result = std::string(path_var);
+        free(path_var);
     }
-    result = std::string(path_var);
-    free(path_var);
-    path_var = nullptr;
 #else
     auto r = std::getenv(name);
     if (r) {
@@ -20,7 +18,11 @@ std::string get_env(const char *name) {
 }
 
 void unset_env(const char *name) {
+#ifdef _WIN32
+    _putenv_s(name, "");
+#else
     unsetenv(name);
+#endif
 }
 
 std::pair<std::string, std::string> get_py_env() {
@@ -35,6 +37,10 @@ void unset_py_env() {
 }
 
 void set_env(const char *name, const std::string &value) {
+    if (value.empty()) {
+        unset_env(name);
+        return;
+    }
 #ifdef _WIN32
     _putenv_s(name, value.c_str());
 #else
@@ -42,7 +48,7 @@ void set_env(const char *name, const std::string &value) {
 #endif
 }
 
-void set_py_env(const std::pair<std::string, std::string> values) {
+void set_py_env(const std::pair<std::string, std::string> &values) {
     set_env("PYTHONHOME", values.first);
     set_env("PYTHONPATH", values.second);
 }
@@ -52,21 +58,23 @@ void initialize_guard() {
     if (guard) return;
     // make sure if PYTHONHOME and PYTHONPATH are set or not
     auto python_env_vars = get_py_env();
-    // if it is set, clear it out temporally and then restore it later
-    // when we check the system path
-    if (python_env_vars.first.empty()) {
-        // we all good
-        // can't use make_unique since it's c++14 only
+    bool has_python_env_vars = !python_env_vars.first.empty() || !python_env_vars.second.empty();
+
+    if (has_python_env_vars || !conda_python_home.empty()) {
+        // Simulator launchers such as Vivado may set PYTHONHOME/PYTHONPATH to
+        // their bundled Python. Temporarily replace those with the build-time
+        // interpreter paths before pybind11 initializes CPython.
+        unset_py_env();
         if (!conda_python_home.empty()) {
             set_py_env(std::make_pair(conda_python_home, conda_python_path));
         }
         guard = std::unique_ptr<py::scoped_interpreter>(new py::scoped_interpreter());
-    } else {
-        // unset the env
         unset_py_env();
+        if (has_python_env_vars) {
+            set_py_env(python_env_vars);
+            has_py_env_set = true;
+        }
+    } else {
         guard = std::unique_ptr<py::scoped_interpreter>(new py::scoped_interpreter());
-        // then restore it
-        set_py_env(python_env_vars);
-        has_py_env_set = true;
     }
 }

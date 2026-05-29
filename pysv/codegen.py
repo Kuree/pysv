@@ -67,11 +67,13 @@ def __should_generate_func_import(func_defs):
 
 def __get_conda_path():
     result = ""
-    if is_conda():
-        python_home = os.path.dirname(sys.executable)
-        python_path = ":".join(sys.path)
-        result += "std::string conda_python_home = \"{0}\"\n;".format(python_home)
-        result += "std::string conda_python_path = \"{0}\";\n".format(python_path)
+    if is_conda() or sys.prefix != sys.base_prefix:
+        python_home = sys.prefix if is_conda() else sys.base_prefix
+        python_path = os.pathsep.join(sys.path)
+        python_home = python_home.replace("\\", "\\\\").replace('"', '\\"')
+        python_path = python_path.replace("\\", "\\\\").replace('"', '\\"')
+        result += 'std::string conda_python_home = "{0}";\n'.format(python_home)
+        result += 'std::string conda_python_path = "{0}";\n'.format(python_path)
     else:
         result += "std::string conda_python_home;\n"
         result += "std::string conda_python_path;\n"
